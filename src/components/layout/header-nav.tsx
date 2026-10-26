@@ -40,9 +40,18 @@ export function HeaderNav({ user }: { user: User | null }) {
           <nav aria-label="모바일 메뉴" className="flex flex-col">
             {user && (
               <>
-                <Link href="/me" onClick={() => setOpen(false)} className={clsx(linkClass(pathname.startsWith('/me')), 'py-2.5')}>
+                <Link href="/me" onClick={() => setOpen(false)} className={clsx(linkClass(pathname === '/me'), 'py-2.5')}>
                   마이페이지
                 </Link>
+                {user.role !== 'ADMIN' && (
+                  <Link
+                    href="/me/applications"
+                    onClick={() => setOpen(false)}
+                    className={clsx(linkClass(pathname.startsWith('/me/applications')), 'py-2.5')}
+                  >
+                    내 신청
+                  </Link>
+                )}
                 {user.role === 'ADMIN' && (
                   <>
                     <Link href="/admin" onClick={() => setOpen(false)} className={clsx(linkClass(pathname.startsWith('/admin')), 'py-2.5')}>

@@ -1,7 +1,7 @@
 'use client';
 
 import clsx from 'clsx';
-import { ChevronDown, LayoutDashboard, LogOut, RotateCcw, UserRound } from 'lucide-react';
+import { ChevronDown, ClipboardList, LayoutDashboard, LogOut, RotateCcw, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -27,7 +27,7 @@ export function useLogout(onDone?: () => void) {
 
 const itemClass = 'flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-sm font-medium text-ink-soft hover:bg-sunken';
 
-/** 닉네임을 누르면 마이페이지·대시보드(관리자)·로그아웃이 펼쳐지는 사용자 메뉴 (데스크톱) */
+/** 닉네임을 누르면 마이페이지·내 신청(일반)·대시보드(관리자)·로그아웃이 펼쳐지는 사용자 메뉴 (데스크톱) */
 export function UserMenu({ user, onDemoReset }: { user: User; onDemoReset: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -66,6 +66,12 @@ export function UserMenu({ user, onDemoReset }: { user: User; onDemoReset: () =>
             <UserRound className="size-4" aria-hidden />
             마이페이지
           </Link>
+          {user.role !== 'ADMIN' && (
+            <Link href="/me/applications" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
+              <ClipboardList className="size-4" aria-hidden />
+              내 신청
+            </Link>
+          )}
           {user.role === 'ADMIN' && (
             <>
               <Link href="/admin" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
