@@ -26,12 +26,14 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
   }
   if (res.status === 204) return undefined as T;
   const text = await res.text();
-  const data = text ? safeJson(text) : null;
-  if (!res.ok) {
-    const e = data as Partial<ApiErrorBody> | null;
-    throw new ApiError(res.status, e?.code ?? 'ERROR', e?.message ?? '요청을 처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.', e?.details);
-  }
-  return data as T;
+  if (!res.ok) throw toApiError(res.status, text);
+  return (text ? safeJson(text) : null) as T;
+}
+
+/** 실패한 응답 본문을 ApiError 로 바꾼다. 본문이 JSON 이 아니면 일반 안내를 쓴다. */
+export function toApiError(status: number, text: string): ApiError {
+  const e = (text ? safeJson(text) : null) as Partial<ApiErrorBody> | null;
+  return new ApiError(status, e?.code ?? 'ERROR', e?.message ?? '요청을 처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.', e?.details);
 }
 
 function safeJson(text: string): unknown {

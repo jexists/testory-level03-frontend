@@ -4,51 +4,16 @@ import clsx from 'clsx';
 import { LinkButton } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/state-view';
 import { getAdminRecruitment, type AdminRecruitmentDetail } from '@/features/admin/admin-recruitment';
+import { ANALYSIS_SECTIONS, ResultSection } from '@/features/admin/analysis-result';
+import { AnalysisRunner } from '@/features/admin/analysis-runner';
 import { LoadError } from '@/features/admin/load-error';
 import { ReviewButton } from '@/features/admin/review-button';
 import { first, toPositiveInt, type SearchParams } from '@/features/admin/query';
 import { formatDateTime } from '@/lib/format';
 import { serverApi } from '@/lib/server-api';
-import type { AnalysisDetail, AnalysisResult, AnalysisSummary } from '@/lib/types';
+import type { AnalysisDetail, AnalysisSummary } from '@/lib/types';
 
 export const metadata: Metadata = { title: 'AI 분석' };
-
-const SECTIONS: { key: keyof AnalysisResult; title: string; dot: string; ordered?: boolean }[] = [
-  { key: 'recurringIssues', title: '반복되는 문제', dot: 'bg-bug' },
-  { key: 'improvementRequests', title: '개선 요청', dot: 'bg-improve' },
-  { key: 'positiveOpinions', title: '긍정 의견', dot: 'bg-praise' },
-  { key: 'priorityChecks', title: '먼저 확인할 것', dot: 'bg-brand', ordered: true },
-];
-
-function ResultSection({ title, dot, items, ordered }: { title: string; dot: string; items: string[]; ordered?: boolean }) {
-  const id = `section-${title}`;
-  return (
-    <section aria-labelledby={id} className="panel p-5">
-      <h3 id={id} className="flex items-center gap-2 text-base">
-        <span className={clsx('size-2.5 rounded-[2px]', dot)} aria-hidden />
-        {title}
-      </h3>
-      {items.length === 0 ? (
-        <p className="mt-3 text-sm text-muted">해당하는 내용이 없어요.</p>
-      ) : ordered ? (
-        <ol className="mt-3 space-y-2 text-sm">
-          {items.map((t, i) => (
-            <li key={i} className={clsx('flex gap-3 rounded-control px-3 py-2', i === 0 ? 'bg-brand-tint font-semibold text-brand-ink' : 'text-ink-soft')}>
-              <span className="w-4 shrink-0 font-mono">{i + 1}</span>
-              <span>{t}</span>
-            </li>
-          ))}
-        </ol>
-      ) : (
-        <ul className="mt-3 list-disc space-y-1.5 pl-5 text-sm text-ink-soft marker:text-line-strong">
-          {items.map((t, i) => (
-            <li key={i}>{t}</li>
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
 
 export default async function RecruitmentAnalysisPage(props: { params: Promise<{ id: string }>; searchParams: Promise<SearchParams> }) {
   const [{ id: raw }, sp] = await Promise.all([props.params, props.searchParams]);
@@ -68,7 +33,14 @@ export default async function RecruitmentAnalysisPage(props: { params: Promise<{
     return <LoadError error={e} />;
   }
 
+  // 피드백 탭의 "AI 분석 실행"이 ?run=1 로 보내면 여기서 새 분석을 돌린다.
+  const runner =
+    first(sp.run) === '1' && !selected.deletedAt && selected.feedbackCount > 0 ? (
+      <AnalysisRunner recruitmentId={recruitmentId} feedbackCount={selected.feedbackCount} />
+    ) : null;
+
   if (versions.length === 0) {
+    if (runner) return runner;
     return (
       <div className="panel">
         <EmptyState
@@ -86,13 +58,16 @@ export default async function RecruitmentAnalysisPage(props: { params: Promise<{
 
   let detail: AnalysisDetail | null = null;
   let detailError: unknown = null;
-  try {
-    detail = await serverApi<AnalysisDetail>(`/admin/recruitments/${recruitmentId}/analyses/${versionNo ?? 'latest'}`);
-  } catch (e) {
-    detailError = e;
+  if (!runner) {
+    try {
+      detail = await serverApi<AnalysisDetail>(`/admin/recruitments/${recruitmentId}/analyses/${versionNo ?? 'latest'}`);
+    } catch (e) {
+      detailError = e;
+    }
   }
 
-  const current = detail?.versionNo ?? versionNo ?? versions[0].versionNo;
+  // 분석을 돌리는 동안에는 어느 버전도 고른 상태로 보이지 않게 한다.
+  const current = runner ? null : (detail?.versionNo ?? versionNo ?? versions[0].versionNo);
   const isLatest = current === versions[0].versionNo;
   // 피드백 마감 뒤 최신 분석을 보면 "확인 완료"로 모집글을 종료할 수 있다.
   const review =
@@ -119,9 +94,8 @@ export default async function RecruitmentAnalysisPage(props: { params: Promise<{
                     className={clsx('block rounded-control border px-3 py-2.5 text-sm transition-colors', active ? 'border-brand/30 bg-brand-tint' : 'border-transparent hover:bg-sunken')}
                   >
                     <span className={clsx('font-mono font-semibold', active && 'text-brand-ink')}>v{v.versionNo}</span>
+                    <span className="ml-1.5 text-xs text-ink-soft">(피드백 {v.feedbackCount}건)</span>
                     <span className="block text-xs text-ink-soft">{formatDateTime(v.createdAt)}</span>
-                    <span className="block text-xs text-ink-soft">피드백 {v.feedbackCount}건 기준</span>
-                    <span className="block font-mono text-xs text-muted">{v.modelName}</span>
                   </Link>
                 </li>
               );
@@ -130,22 +104,28 @@ export default async function RecruitmentAnalysisPage(props: { params: Promise<{
         </nav>
 
         <div className="min-w-0 space-y-4">
-          {detail ? (
-            <>
-              <div className="panel flex flex-wrap items-baseline gap-x-5 gap-y-1 px-5 py-4">
-                <h2 className="font-mono text-xl">v{detail.versionNo}</h2>
-                <p className="text-sm text-ink-soft">{formatDateTime(detail.createdAt)} 분석</p>
-                <p className="text-sm text-ink-soft">분석 당시 피드백 {detail.feedbackCount}건</p>
-                {detail.createdByNickname && <p className="text-sm text-ink-soft">분석한 사람 {detail.createdByNickname}</p>}
-                {review && <div className="ml-auto">{review}</div>}
+          {runner ?? (detail ? (
+            <article aria-labelledby="analysis-version-title" className="panel">
+              <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-5 pt-5">
+                <div className="space-y-0.5">
+                  <h2 id="analysis-version-title" className="font-mono text-xl">
+                    v{detail.versionNo}
+                  </h2>
+                  <p className="text-sm text-ink-soft">
+                    피드백 {detail.feedbackCount}건 · {formatDateTime(detail.createdAt)} 분석
+                  </p>
+                </div>
+                {review}
+              </header>
+              <div>
+                {ANALYSIS_SECTIONS.map((s) => (
+                  <ResultSection key={s.key} title={s.title} dot={s.dot} ordered={s.ordered} items={detail.result[s.key] ?? []} />
+                ))}
               </div>
-              {SECTIONS.map((s) => (
-                <ResultSection key={s.key} title={s.title} dot={s.dot} ordered={s.ordered} items={detail.result[s.key] ?? []} />
-              ))}
-            </>
+            </article>
           ) : (
             <LoadError error={detailError} title="이 버전을 불러오지 못했어요" />
-          )}
+          ))}
         </div>
       </div>
     </>
