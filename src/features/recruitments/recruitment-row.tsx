@@ -1,12 +1,13 @@
 import { StageBadge } from '@/components/ui/badge';
 import { ListRow } from '@/components/ui/list-row';
+import { devicesText } from '@/lib/device';
 import { formatPeriod } from '@/lib/format';
 import type { Recruitment } from '@/lib/types';
 
 /** 목록의 한 줄: 왼쪽 단계, 가운데 제목·허용 기기와 기간, 오른쪽 남은 자리 */
 export function RecruitmentRow({ r }: { r: Recruitment }) {
   const open = r.status === 'OPEN' && r.remaining > 0;
-  const devices = r.devices.length === 0 ? '모든 기기' : r.devices.map((d) => d.label).join(', ');
+  const devices = devicesText(r.devices);
   return (
     <ListRow
       stretched

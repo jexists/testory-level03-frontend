@@ -108,7 +108,7 @@ test('관리자는 대시보드에서 단계별로 보고, 분석을 확인 완�
   await login(page, 'admin@testory.demo');
   await expect(page).toHaveURL(/\/admin$/);
   await expect(page.getByRole('heading', { name: '대시보드', level: 1 })).toBeVisible();
-  await expect(page.getByText('정원 차서 바로 시작')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'AI 분석 필요' }).first()).toBeVisible();
 
   await page.getByRole('link', { name: /^분석 완료/ }).click();
   await expect(page.getByRole('link', { name: '알림 기능 테스트' })).toBeVisible();
@@ -116,7 +116,7 @@ test('관리자는 대시보드에서 단계별로 보고, 분석을 확인 완�
   await page.getByRole('button', { name: '확인 완료' }).click();
   await expect(page.getByText(/확인 완료됨/)).toBeVisible();
 
-  await page.goto('/admin?stage=DONE');
+  await page.goto('/admin?filter=DONE');
   await expect(page.getByRole('link', { name: '알림 기능 테스트' })).toBeVisible();
 
   await page.goto('/admin?q=알림');

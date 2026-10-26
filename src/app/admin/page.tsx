@@ -1,98 +1,59 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import clsx from 'clsx';
-import { Chip, StageBadge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/state-view';
 import { InfoTip } from '@/components/ui/info-tip';
 import { LinkButton } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
+import { AdminRecruitmentRow } from '@/features/admin/admin-recruitment-row';
 import { LoadError } from '@/features/admin/load-error';
-import { PageHeader, td, th } from '@/features/admin/page-header';
+import { PageHeader } from '@/features/admin/page-header';
 import { first, toPositiveInt, toQuery, type SearchParams } from '@/features/admin/query';
-import { RestoreButton } from '@/features/admin/recruitment-actions';
-import { SearchParam, SegmentedParam } from '@/features/admin/url-filters';
-import { dDay, formatDate } from '@/lib/format';
-import { STAGE_LABEL, STAGES } from '@/lib/labels';
+import { SearchParam } from '@/features/admin/url-filters';
+import { ADMIN_FILTER_LABEL, ADMIN_FILTERS } from '@/lib/labels';
 import { serverApi } from '@/lib/server-api';
-import type { AdminRecruitment, AdminRecruitmentPage, Dashboard, Stage } from '@/lib/types';
+import type { AdminFilter, AdminRecruitmentPage } from '@/lib/types';
 
 export const metadata: Metadata = { title: '관리자 대시보드' };
 
 const LIMIT = 20;
-const DELETED = ['exclude', 'include', 'only'];
 
-function Figure({ label, value, info }: { label: string; value: number; info?: string }) {
+/** 상단 숫자 카드. 누르면 같은 기준의 필터 목록으로 간다. */
+function Figure({ label, value, info, href }: { label: string; value: number; info?: string; href: string }) {
   return (
-    <div className="px-4 py-5 sm:px-6">
+    <div className="relative px-4 py-5 transition-colors hover:bg-canvas/70 sm:px-6">
       <dt className="flex items-center gap-0.5 text-xs text-muted sm:text-sm">
-        {label}
-        {info && <InfoTip label={label}>{info}</InfoTip>}
+        <Link href={href} className="after:absolute after:inset-0">
+          {label}
+        </Link>
+        {info && (
+          <span className="relative z-10">
+            <InfoTip label={label}>{info}</InfoTip>
+          </span>
+        )}
       </dt>
       <dd className="mt-1 font-mono text-2xl font-medium tabular-nums">{value.toLocaleString('ko-KR')}</dd>
     </div>
   );
 }
 
-/** 단계마다 지금 봐야 할 날짜 하나 */
-function schedule(r: AdminRecruitment): string {
-  switch (r.stage) {
-    case 'RECRUITING':
-    case 'RECRUIT_CLOSED':
-      return `모집 마감 ${formatDate(r.startAt)} · ${dDay(r.startAt)}`;
-    case 'TESTING':
-      return `피드백 마감 ${formatDate(r.feedbackDueAt)} · ${dDay(r.feedbackDueAt)}`;
-    default:
-      return `피드백 마감 ${formatDate(r.feedbackDueAt)}`;
-  }
-}
-
-/** 관리자가 해야 할 일: 피드백이 다 모이면 분석, 분석이 끝나면 확인. 삭제된 글은 복구만 할 수 있다. */
-function NextAction({ r }: { r: AdminRecruitment }) {
-  if (r.deletedAt) return <RestoreButton id={r.id} title={r.title} />;
-  const href = `/admin/recruitments/${r.id}/analysis`;
-  if (r.stage === 'FEEDBACK_DONE') {
-    return r.feedbackCount > 0 ? (
-      <LinkButton href={`/admin/recruitments/${r.id}/feedbacks`} size="sm">
-        AI 분석하기
-      </LinkButton>
-    ) : (
-      <span className="text-xs text-muted">피드백 없음</span>
-    );
-  }
-  if (r.stage === 'ANALYZED') {
-    return (
-      <LinkButton href={href} size="sm" variant="secondary">
-        분석 확인하기
-      </LinkButton>
-    );
-  }
-  if (r.stage === 'DONE') {
-    return (
-      <Link href={href} className="text-xs text-ink-soft underline-offset-4 hover:underline">
-        분석 v{r.latestAnalysisVersion} 보기
-      </Link>
-    );
-  }
-  return <span className="text-xs text-muted">–</span>;
-}
-
 export default async function AdminDashboardPage(props: { searchParams: Promise<SearchParams> }) {
   const sp = await props.searchParams;
-  const stageParam = first(sp.stage);
-  const stage = STAGES.includes(stageParam as Stage) ? (stageParam as Stage) : undefined;
-  const deleted = DELETED.includes(first(sp.deleted) ?? '') ? (first(sp.deleted) as string) : 'exclude';
+  const filterParam = first(sp.filter);
+  const filter = ADMIN_FILTERS.includes(filterParam as AdminFilter) ? (filterParam as AdminFilter) : undefined;
   const q = first(sp.q)?.trim() || undefined;
   const page = toPositiveInt(first(sp.page)) ?? 1;
-  const searched = deleted !== 'exclude' || !!q;
 
   const header = <PageHeader title="대시보드" actions={<LinkButton href="/admin/recruitments/new">새 모집글 등록</LinkButton>} />;
 
-  let data: Dashboard;
+  let summary: AdminRecruitmentPage;
   let list: AdminRecruitmentPage;
   try {
-    [data, list] = await Promise.all([
-      serverApi<Dashboard>('/admin/dashboard'),
-      serverApi<AdminRecruitmentPage>(`/admin/recruitments${toQuery({ stage, deleted, q, page, limit: LIMIT })}`),
+    [summary, list] = await Promise.all([
+      // 상단 카드: 검색어와 상관없이 필터와 같은 기준으로 센 개수
+      serverApi<AdminRecruitmentPage>('/admin/recruitments?limit=1'),
+      // "전체"에도 삭제된 글이 보이도록 삭제 조건은 늘 include 로 묻는다. 삭제된 글만은 DELETED 필터가 고른다.
+      serverApi<AdminRecruitmentPage>(`/admin/recruitments${toQuery({ filter, deleted: 'include', q, page, limit: LIMIT })}`),
     ]);
   } catch (e) {
     return (
@@ -103,13 +64,12 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     );
   }
 
-  // 단계 탭·쪽 번호를 눌러도 검색어와 삭제 조건은 그대로 둔다.
-  const hrefFor = (over: { stage?: Stage; page?: number }) =>
-    `/admin${toQuery({ stage: over.stage, q, deleted: deleted === 'exclude' ? undefined : deleted, page: over.page && over.page > 1 ? over.page : undefined })}`;
-  const allCount = Object.values(list.stageCounts).reduce((a, b) => a + b, 0);
-  const tabs: { value?: Stage; label: string; count: number }[] = [
-    { label: '전체', count: allCount },
-    ...STAGES.map((s) => ({ value: s, label: STAGE_LABEL[s], count: list.stageCounts[s] })),
+  // 필터 칩·쪽 번호를 눌러도 검색어는 그대로 둔다.
+  const hrefFor = (over: { filter?: AdminFilter; page?: number }) =>
+    `/admin${toQuery({ filter: over.filter, q, page: over.page && over.page > 1 ? over.page : undefined })}`;
+  const tabs: { value?: AdminFilter; label: string; count: number }[] = [
+    { label: '전체', count: list.filterCounts.ALL },
+    ...ADMIN_FILTERS.map((f) => ({ value: f, label: ADMIN_FILTER_LABEL[f], count: list.filterCounts[f] })),
   ];
 
   return (
@@ -117,9 +77,19 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
       {header}
 
       <dl className="panel grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0" aria-label="모집 현황">
-        <Figure label="모집 중" value={data.counts.recruiting} />
-        <Figure label="마감 7일 이내" value={data.counts.closingSoon} info="모집 마감일이 일주일 안에 와요." />
-        <Figure label="정원 차서 바로 시작" value={data.counts.filledEarly} />
+        <Figure label="모집 중" value={summary.filterCounts.RECRUITING} href="/admin?filter=RECRUITING" />
+        <Figure
+          label="마감 임박"
+          value={summary.filterCounts.CLOSING_SOON}
+          info="모집 중인 글 가운데 마감이 7일 안에 오거나 남은 자리가 1명인 글이에요."
+          href="/admin?filter=CLOSING_SOON"
+        />
+        <Figure
+          label="AI 분석 필요"
+          value={summary.filterCounts.NEEDS_ANALYSIS}
+          info="피드백 마감이 지나 피드백이 모였는데 아직 AI 분석을 하지 않은 글이에요."
+          href="/admin?filter=NEEDS_ANALYSIS"
+        />
       </dl>
 
       <section aria-labelledby="by-stage" className="space-y-3">
@@ -127,31 +97,18 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
           모집글
         </h2>
 
-        <div className="panel grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
-          <SearchParam id="q" label="제목 검색" param="q" placeholder="제목에 들어간 말" />
-          <div className="space-y-1.5">
-            <p className="text-sm font-semibold text-ink">삭제된 글</p>
-            <SegmentedParam
-              label="삭제된 글 보기"
-              param="deleted"
-              defaultValue="exclude"
-              options={[
-                { value: 'exclude', label: '숨기기' },
-                { value: 'include', label: '함께 보기' },
-                { value: 'only', label: '삭제된 글만' },
-              ]}
-            />
-          </div>
+        <div className="panel p-4">
+          <SearchParam id="q" label="모집글 제목 검색" hideLabel param="q" placeholder="모집글 검색" />
         </div>
 
-        <nav aria-label="진행 단계" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+        <nav aria-label="모집글 필터" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <ul className="flex gap-1.5">
             {tabs.map((t) => {
-              const on = t.value === stage;
+              const on = t.value === filter;
               return (
                 <li key={t.label}>
                   <Link
-                    href={hrefFor({ stage: t.value })}
+                    href={hrefFor({ filter: t.value })}
                     aria-current={on ? 'page' : undefined}
                     className={clsx(
                       'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-control border px-3 text-sm font-medium transition-colors',
@@ -167,12 +124,12 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
           </ul>
         </nav>
 
-        <div className="panel overflow-x-auto">
-          {list.items.length === 0 ? (
-            stage || searched ? (
+        {list.items.length === 0 ? (
+          <div className="panel">
+            {filter || q ? (
               <EmptyState
-                title={stage ? `'${STAGE_LABEL[stage]}' 단계인 모집글이 없어요` : '조건에 맞는 모집글이 없어요'}
-                description="다른 단계를 고르거나 검색 조건을 바꿔 보세요."
+                title={filter ? `'${ADMIN_FILTER_LABEL[filter]}'에 해당하는 모집글이 없어요` : '조건에 맞는 모집글이 없어요'}
+                description="다른 필터를 고르거나 검색어를 바꿔 보세요."
                 action={
                   <LinkButton href="/admin" variant="secondary">
                     필터 모두 지우기
@@ -185,70 +142,16 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
                 description="모집글을 등록하면 진행 단계가 여기에 나타나요."
                 action={<LinkButton href="/admin/recruitments/new">새 모집글 등록</LinkButton>}
               />
-            )
-          ) : (
-            <table className="w-full min-w-[48rem] text-sm">
-              <caption className="sr-only">모집글별 진행 단계, 참여자 수, 피드백 수와 할 일</caption>
-              <thead className="border-b border-line bg-canvas">
-                <tr>
-                  <th scope="col" className={th}>
-                    모집글
-                  </th>
-                  <th scope="col" className={th}>
-                    상태
-                  </th>
-                  <th scope="col" className={`${th} text-right`}>
-                    참여자
-                  </th>
-                  <th scope="col" className={`${th} text-right`}>
-                    피드백
-                  </th>
-                  <th scope="col" className={th}>
-                    일정
-                  </th>
-                  <th scope="col" className={th}>
-                    할 일
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line">
-                {list.items.map((r) => (
-                  <tr key={r.id} className={r.deletedAt ? 'bg-canvas text-ink-soft' : undefined}>
-                    <th scope="row" className={`${td} text-left font-semibold`}>
-                      <Link
-                        href={`/admin/recruitments/${r.id}`}
-                        className={clsx('underline-offset-4 hover:underline', r.deletedAt ? 'text-ink-soft' : 'text-brand-ink')}
-                      >
-                        {r.title}
-                      </Link>
-                      {r.deletedAt && (
-                        <span className="mt-1 block font-normal">
-                          <Chip>삭제됨 · {formatDate(r.deletedAt)}</Chip>
-                        </span>
-                      )}
-                    </th>
-                    <td className={td}>
-                      <StageBadge stage={r.stage} />
-                    </td>
-                    <td className={`${td} whitespace-nowrap text-right font-mono tabular-nums`}>
-                      {r.participants} / {r.capacity}
-                    </td>
-                    <td className={`${td} whitespace-nowrap text-right`}>
-                      <span className="font-mono tabular-nums">{r.feedbackCount}</span>건
-                      {r.bugCount > 0 && <span className="text-bug"> · 버그 {r.bugCount}</span>}
-                    </td>
-                    <td className={`${td} whitespace-nowrap text-ink-soft`}>{schedule(r)}</td>
-                    <td className={td}>
-                      <NextAction r={r} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-        <p className="text-xs text-muted">전체 {list.total}건</p>
-        <Pagination page={list.page} total={list.total} limit={list.limit} hrefFor={(p) => hrefFor({ stage, page: p })} />
+            )}
+          </div>
+        ) : (
+          <ul className="panel divide-y divide-line overflow-hidden" aria-label="모집글 목록">
+            {list.items.map((r) => (
+              <AdminRecruitmentRow key={r.id} r={r} />
+            ))}
+          </ul>
+        )}
+        <Pagination page={list.page} total={list.total} limit={list.limit} hrefFor={(p) => hrefFor({ filter, page: p })} />
       </section>
     </>
   );

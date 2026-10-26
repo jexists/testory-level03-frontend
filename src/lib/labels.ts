@@ -1,4 +1,4 @@
-import type { FeedbackType, Os, PublicStage, RecruitmentKind, Stage } from './types';
+import type { AdminFilter, FeedbackType, Os, PublicStage, RecruitmentKind, Stage } from './types';
 
 export const OS_LABEL: Record<Os, string> = { ANDROID: 'Android', IOS: 'iOS' };
 /** 목록 OS 는 이름표로, 직접 입력한 OS 이름은 그대로 보여 준다. */
@@ -15,4 +15,15 @@ export const STAGE_LABEL: Record<Stage | PublicStage, string> = {
   ANALYZED: '분석 완료',
   DONE: '종료',
   FEEDBACK_CLOSED: '피드백 마감',
+};
+/** 관리자 대시보드 필터 칩 순서 ("전체" 다음) */
+export const ADMIN_FILTERS: AdminFilter[] = ['RECRUITING', 'CLOSING_SOON', 'TESTING', 'NEEDS_ANALYSIS', 'ANALYZED', 'DONE', 'DELETED'];
+export const ADMIN_FILTER_LABEL: Record<AdminFilter, string> = {
+  RECRUITING: '모집 중',
+  CLOSING_SOON: '마감 임박',
+  TESTING: '테스트 중',
+  NEEDS_ANALYSIS: 'AI 분석 필요',
+  ANALYZED: '분석 완료',
+  DONE: '종료',
+  DELETED: '삭제',
 };

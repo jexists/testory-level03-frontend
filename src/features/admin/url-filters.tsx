@@ -70,14 +70,29 @@ export function SelectParam({ id, label, param, options, placeholder }: { id: st
   );
 }
 
-export function SearchParam({ id, label, param, placeholder }: { id: string; label: string; param: string; placeholder?: string }) {
+/** 제목 검색칸. hideLabel 이면 라벨은 화면 읽기 프로그램에만 들린다. */
+export function SearchParam({ id, label, param, placeholder, hideLabel }: { id: string; label: string; param: string; placeholder?: string; hideLabel?: boolean }) {
   const nav = useParamNavigate();
   const current = nav.get(param) ?? '';
   // 주소가 바뀌면(뒤로 가기 등) 입력칸도 맞추기 위해 key 로 다시 만든다
-  return <SearchBox key={current} id={id} label={label} initial={current} placeholder={placeholder} onSubmit={(v) => nav.set(param, v)} />;
+  return <SearchBox key={current} id={id} label={label} hideLabel={hideLabel} initial={current} placeholder={placeholder} onSubmit={(v) => nav.set(param, v)} />;
 }
 
-function SearchBox({ id, label, initial, placeholder, onSubmit }: { id: string; label: string; initial: string; placeholder?: string; onSubmit: (v: string) => void }) {
+function SearchBox({
+  id,
+  label,
+  hideLabel,
+  initial,
+  placeholder,
+  onSubmit,
+}: {
+  id: string;
+  label: string;
+  hideLabel?: boolean;
+  initial: string;
+  placeholder?: string;
+  onSubmit: (v: string) => void;
+}) {
   const [value, setValue] = useState(initial);
   return (
     <form
@@ -88,7 +103,7 @@ function SearchBox({ id, label, initial, placeholder, onSubmit }: { id: string; 
       }}
       className="space-y-1.5"
     >
-      <label htmlFor={id} className="block text-sm font-semibold text-ink">
+      <label htmlFor={id} className={hideLabel ? 'sr-only' : 'block text-sm font-semibold text-ink'}>
         {label}
       </label>
       <div className="flex gap-2">

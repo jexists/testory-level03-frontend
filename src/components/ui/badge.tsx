@@ -20,6 +20,11 @@ export function StageBadge({ stage }: { stage: Stage | PublicStage }) {
   return <span className={clsx(chip, 'whitespace-nowrap', stageStyle[stage])}>{STAGE_LABEL[stage]}</span>;
 }
 
+/** 삭제된 모집글 배지. 관리자 목록에서 진행 단계 배지 대신 쓴다. */
+export function DeletedBadge() {
+  return <span className={clsx(chip, 'whitespace-nowrap border border-line-strong bg-surface text-muted')}>삭제</span>;
+}
+
 const typeStyle: Record<FeedbackType, string> = {
   BUG: 'bg-bug-tint text-bug',
   IMPROVEMENT: 'bg-improve-tint text-improve',

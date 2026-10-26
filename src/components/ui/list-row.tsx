@@ -8,7 +8,7 @@ interface ListRowProps {
   badge: ReactNode;
   title: string;
   href: string;
-  /** true 면 줄 전체가 링크가 되고 오른쪽에 › 가 붙는다. 줄 안에 버튼이 있으면 false 로 둔다. */
+  /** true 면 줄 전체가 링크가 되고 오른쪽에 › 가 붙는다. 줄 안의 버튼은 relative z-10 으로 링크 위에 띄운다. */
   stretched?: boolean;
   /** 제목 바로 옆에 붙는 짧은 정보 (허용 기기 등) */
   titleAside?: ReactNode;

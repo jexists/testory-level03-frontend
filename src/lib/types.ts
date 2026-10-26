@@ -89,9 +89,13 @@ export interface AdminRecruitment extends Recruitment {
   latestAnalysisVersion: number | null;
 }
 
-/** 관리자 목록. 단계 탭 숫자는 검색·삭제 조건만 반영한 값이다. */
+/** 관리자 목록 필터. 진행 단계가 아니라 관리자가 할 일 기준으로 묶는다. */
+export type AdminFilter = 'RECRUITING' | 'CLOSING_SOON' | 'TESTING' | 'NEEDS_ANALYSIS' | 'ANALYZED' | 'DONE' | 'DELETED';
+
+/** 관리자 목록. 단계 탭·필터 칩 숫자는 검색·삭제 조건만 반영한 값이다. */
 export interface AdminRecruitmentPage extends Page<AdminRecruitment> {
   stageCounts: Record<Stage, number>;
+  filterCounts: Record<AdminFilter | 'ALL', number>;
 }
 
 export interface MyApplication {
