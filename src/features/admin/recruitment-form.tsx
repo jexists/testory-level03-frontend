@@ -26,15 +26,18 @@ const schema = z
     capacity: z.number({ message: CAPACITY_MSG }).int(CAPACITY_MSG).min(1, CAPACITY_MSG).max(50, CAPACITY_MSG),
     startAt: z.string().min(1, '시작일을 입력해 주세요.'),
     endAt: z.string().min(1, '종료일을 입력해 주세요.'),
-    devices: z
-      .array(z.object({ os: z.enum(['ANDROID', 'IOS']), scope: z.enum(['ALL', 'MODEL']), deviceModelId: z.number().nullable() }))
-      .min(1, DEVICE_MIN_MSG),
+    /** 켜면 OS·모델과 관계없이 모든 기기를 받는다 (기기 조건 없이 저장) */
+    anyDevice: z.boolean(),
+    devices: z.array(z.object({ os: z.enum(['ANDROID', 'IOS']), scope: z.enum(['ALL', 'MODEL']), deviceModelId: z.number().nullable() })),
   })
   .superRefine((v, ctx) => {
     if (v.startAt && v.endAt && !(new Date(v.endAt).getTime() > new Date(v.startAt).getTime())) {
       ctx.addIssue({ code: 'custom', path: ['endAt'], message: '종료일은 시작일보다 늦어야 해요.' });
     }
-    if (v.devices.some((d) => d.scope === 'MODEL' && d.deviceModelId === null)) {
+    if (v.anyDevice) return;
+    if (v.devices.length === 0) {
+      ctx.addIssue({ code: 'custom', path: ['devices'], message: DEVICE_MIN_MSG });
+    } else if (v.devices.some((d) => d.scope === 'MODEL' && d.deviceModelId === null)) {
       ctx.addIssue({ code: 'custom', path: ['devices'], message: '모델 목록에서 골라 주세요.' });
     } else {
       const issue = deviceIssues(v.devices)[0];
@@ -69,9 +72,10 @@ export function RecruitmentForm({ recruitment }: Props) {
           capacity: recruitment.capacity,
           startAt: toLocalInput(recruitment.startAt),
           endAt: toLocalInput(recruitment.endAt),
+          anyDevice: recruitment.devices.length === 0,
           devices: recruitment.devices.map((d) => ({ os: d.os, scope: d.scope, deviceModelId: d.deviceModelId })),
         }
-      : { title: '', description: '', kind: 'APP_FULL', capacity: 15, startAt: '', endAt: '', devices: [{ os: 'ANDROID', scope: 'ALL', deviceModelId: null }] },
+      : { title: '', description: '', kind: 'APP_FULL', capacity: 15, startAt: '', endAt: '', anyDevice: false, devices: [{ os: 'ANDROID', scope: 'ALL', deviceModelId: null }] },
   });
 
   async function onSubmit(v: Values) {
@@ -83,7 +87,7 @@ export function RecruitmentForm({ recruitment }: Props) {
       capacity: v.capacity,
       startAt: fromLocalInput(v.startAt),
       endAt: fromLocalInput(v.endAt),
-      devices: v.devices.map((d) => ({ os: d.os, scope: d.scope, deviceModelId: d.scope === 'MODEL' ? d.deviceModelId : null })),
+      devices: v.anyDevice ? [] : v.devices.map((d) => ({ os: d.os, scope: d.scope, deviceModelId: d.scope === 'MODEL' ? d.deviceModelId : null })),
     };
     try {
       if (recruitment) await api(`/admin/recruitments/${recruitment.id}`, { method: 'PATCH', body });
@@ -155,7 +159,21 @@ export function RecruitmentForm({ recruitment }: Props) {
       <Controller
         control={control}
         name="devices"
-        render={({ field }) => <DeviceConditionsEditor value={field.value as DeviceRow[]} onChange={field.onChange} error={errors.devices?.message ?? errors.devices?.root?.message} />}
+        render={({ field }) => (
+          <Controller
+            control={control}
+            name="anyDevice"
+            render={({ field: any }) => (
+              <DeviceConditionsEditor
+                value={field.value as DeviceRow[]}
+                onChange={field.onChange}
+                anyDevice={any.value}
+                onAnyDeviceChange={any.onChange}
+                error={errors.devices?.message ?? errors.devices?.root?.message}
+              />
+            )}
+          />
+        )}
       />
 
       <div className="flex flex-wrap justify-end gap-2 border-t border-line pt-5">

@@ -9,7 +9,7 @@ import { PageHeader, td, th } from '@/features/admin/page-header';
 import { first, toPositiveInt, type SearchParams } from '@/features/admin/query';
 import { SegmentedParam } from '@/features/admin/url-filters';
 import { formatDateTime } from '@/lib/format';
-import { OS_LABEL } from '@/lib/labels';
+import { osText } from '@/lib/labels';
 import { serverApi } from '@/lib/server-api';
 import type { Applicant, Recruitment } from '@/lib/types';
 
@@ -126,7 +126,7 @@ export default async function ApplicantsPage(props: { params: Promise<{ id: stri
                     {a.nickname}
                   </th>
                   <td className={td}>
-                    <span className="text-ink-soft">{OS_LABEL[a.deviceType]}</span> <span className="text-xs">{a.deviceModel}</span>
+                    <span className="text-ink-soft">{osText(a.deviceType)}</span> <span className="text-xs">{a.deviceModel}</span>
                   </td>
                   <td className={`${td} whitespace-nowrap text-ink-soft`}>{formatDateTime(a.appliedAt)}</td>
                   <td className={td}>

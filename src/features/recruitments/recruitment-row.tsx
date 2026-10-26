@@ -23,11 +23,17 @@ export function RecruitmentRow({ r }: { r: Recruitment }) {
           {KIND_LABEL[r.kind]} 테스트 <span aria-hidden>·</span> {formatPeriod(r.startAt, r.endAt)}
         </p>
         <ul className="flex flex-wrap gap-1.5" aria-label="허용 기기">
-          {r.devices.map((d) => (
-            <li key={d.id}>
-              <Chip>{d.label}</Chip>
+          {r.devices.length === 0 ? (
+            <li>
+              <Chip>모든 기기</Chip>
             </li>
-          ))}
+          ) : (
+            r.devices.map((d) => (
+              <li key={d.id}>
+                <Chip>{d.label}</Chip>
+              </li>
+            ))
+          )}
         </ul>
       </div>
       <div className="space-y-2">

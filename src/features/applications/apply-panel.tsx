@@ -10,13 +10,17 @@ import { Notice } from '@/components/ui/state-view';
 import { SeatStrip } from '@/components/ui/seat-strip';
 import { useToast } from '@/components/ui/toast';
 import { api, errorMessage } from '@/lib/api';
-import { OS_LABEL } from '@/lib/labels';
+import { osText } from '@/lib/labels';
 import type { Recruitment, User } from '@/lib/types';
 
 /** 화면 안내용 확인이다. 실제로 신청이 되는지는 서버가 다시 판단한다. */
 function deviceAllowed(r: Recruitment, user: User): boolean {
-  if (!user.deviceType || !user.deviceModel) return false;
-  return r.devices.some((d) => (d.scope === 'ALL' ? d.os === user.deviceType : d.deviceModelId === user.deviceModel!.id));
+  if (!(user.deviceType || user.deviceOsName) || !user.deviceModel) return false;
+  // 조건이 없으면 모든 기기. 직접 입력한 OS·모델은 목록 기준 조건에 맞지 않는다.
+  if (r.devices.length === 0) return true;
+  return r.devices.some((d) =>
+    d.scope === 'ALL' ? d.os === user.deviceType : user.deviceModel!.id !== null && d.deviceModelId === user.deviceModel!.id,
+  );
 }
 
 const CLOSED_TEXT: Record<string, string> = {
@@ -95,9 +99,9 @@ export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment;
         <div className="space-y-4 border-t border-line pt-4">
           <div className="space-y-1.5">
             <p className="text-sm font-semibold">내 기기</p>
-            {user.deviceType && user.deviceModel ? (
+            {(user.deviceType || user.deviceOsName) && user.deviceModel ? (
               <p className="flex flex-wrap items-center gap-2 text-sm">
-                <Chip>{OS_LABEL[user.deviceType]}</Chip>
+                <Chip>{osText(user.deviceType, user.deviceOsName)}</Chip>
                 <span>{user.deviceModel.modelName}</span>
               </p>
             ) : (

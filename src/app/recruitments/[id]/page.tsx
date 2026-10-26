@@ -69,15 +69,21 @@ export default async function RecruitmentDetailPage({ params }: { params: Params
               허용 기기
             </h2>
             <ul className="flex flex-wrap gap-2">
-              {r.devices.map((d) => (
-                <li key={d.id}>
-                  <Chip tone="brand">
-                    {d.label}
-                  </Chip>
+              {r.devices.length === 0 ? (
+                <li>
+                  <Chip tone="brand">모든 기기</Chip>
                 </li>
-              ))}
+              ) : (
+                r.devices.map((d) => (
+                  <li key={d.id}>
+                    <Chip tone="brand">{d.label}</Chip>
+                  </li>
+                ))
+              )}
             </ul>
-            <p className="text-sm text-muted">내 기기가 이 조건에 맞아야 신청할 수 있어요.</p>
+            <p className="text-sm text-muted">
+              {r.devices.length === 0 ? '기기와 관계없이 누구나 신청할 수 있어요.' : '내 기기가 이 조건에 맞아야 신청할 수 있어요.'}
+            </p>
           </section>
 
           <section aria-labelledby="feedback" className="space-y-3">

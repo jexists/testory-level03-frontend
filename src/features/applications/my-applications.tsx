@@ -10,7 +10,7 @@ import { Notice } from '@/components/ui/state-view';
 import { useToast } from '@/components/ui/toast';
 import { api, errorMessage } from '@/lib/api';
 import { formatDateTime, formatPeriod } from '@/lib/format';
-import { OS_LABEL } from '@/lib/labels';
+import { osText } from '@/lib/labels';
 import type { MyApplication } from '@/lib/types';
 
 export function MyApplications({ items }: { items: MyApplication[] }) {
@@ -62,7 +62,7 @@ export function MyApplications({ items }: { items: MyApplication[] }) {
               </p>
               <p className="flex flex-wrap items-center gap-2 text-sm">
                 <span className="text-muted">신청 당시 기기</span>
-                <Chip>{OS_LABEL[a.deviceType]}</Chip>
+                <Chip>{osText(a.deviceType)}</Chip>
                 <span className="text-sm">{a.deviceModel}</span>
               </p>
             </div>
