@@ -19,6 +19,21 @@ const schema = z.object({
 });
 type Values = z.infer<typeof schema>;
 
+/**
+ * 로컬 개발(next dev)에서만 보이는 빠른 로그인. 시연 데이터의 계정으로 바로 들어간다.
+ * 운영 빌드에서는 NODE_ENV 가 production 으로 바뀌어 이 값과 버튼이 번들에서 빠진다.
+ */
+const DEV_LOGIN =
+  process.env.NODE_ENV === 'development'
+    ? {
+        password: process.env.NEXT_PUBLIC_DEMO_PASSWORD || 'testory-demo-1234',
+        accounts: [
+          { label: '관리자로 로그인', email: 'admin@testory.demo' },
+          { label: '테스터로 로그인', email: 'tester01@testory.demo' },
+        ],
+      }
+    : null;
+
 /** 같은 사이트 안의 경로만 돌아가기 주소로 쓴다. */
 const safeNext = (next: string | null) => (next && next.startsWith('/') && !next.startsWith('//') ? next : null);
 
@@ -26,11 +41,19 @@ export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const [serverError, setServerError] = useState('');
+  const [devBusy, setDevBusy] = useState('');
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<Values>({ resolver: zodResolver(schema) });
+
+  async function devLogin(email: string) {
+    if (!DEV_LOGIN) return;
+    setDevBusy(email);
+    await onSubmit({ email, password: DEV_LOGIN.password });
+    setDevBusy('');
+  }
 
   async function onSubmit(values: Values) {
     setServerError('');
@@ -75,6 +98,18 @@ export function LoginForm() {
           로그인
         </Button>
       </form>
+      {DEV_LOGIN && (
+        <div className="mt-6 space-y-2 rounded-control border border-dashed border-line-strong p-3">
+          <p className="text-xs text-muted">로컬 개발 전용 · 시연 계정으로 바로 로그인해요.</p>
+          <div className="grid grid-cols-2 gap-2">
+            {DEV_LOGIN.accounts.map((a) => (
+              <Button key={a.email} variant="secondary" size="sm" loading={devBusy === a.email} disabled={!!devBusy || isSubmitting} onClick={() => devLogin(a.email)}>
+                {a.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </AuthShell>
   );
 }
