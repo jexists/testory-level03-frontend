@@ -5,7 +5,10 @@
 - 기획서: [`기획서.md`](./기획서.md) (백엔드 저장소의 `기획서.md` 와 같은 내용)
 - 백엔드 저장소: `testory-level01-backend` (이 저장소와 독립)
 - 로컬 주소: <http://localhost:3000> (백엔드 <http://localhost:4000>, API 문서 <http://localhost:4000/api/docs>)
-- 배포 주소: _(Vercel 배포 후 여기에 입력)_
+- 배포 주소: <https://testory-level01-frontend.vercel.app>
+- 백엔드 배포 주소: <https://testory-level01-backend.onrender.com> (Health: <https://testory-level01-backend.onrender.com/health>)
+
+> ⏱ 백엔드는 Render 무료 서버라 15분 동안 요청이 없으면 잠들고, 첫 접속 때 깨어나는 데 1분 가까이 걸릴 수 있습니다. 화면에 오류가 보이면 잠시 뒤 새로고침해 주세요.
 
 ## 확인용 데모 계정
 
@@ -18,15 +21,15 @@
 | 일반 사용자(iOS, 아이폰 14 — 기기 불일치 시연) | `tester19@testory.demo` | `testory-demo-1234` |
 | 일반 사용자("하루칸 앱 전체 베타 테스트" 테스트 중 → 피드백 시연, "반복 일정 기능 테스트" 모집 중 → 취소 시연) | `tester01@testory.demo` | `testory-demo-1234` |
 
-운영 환경에서는 백엔드의 `DEMO_PASSWORD` 로 정한 비밀번호가 쓰입니다.
+배포 주소에서도 같은 계정과 비밀번호로 로그인할 수 있습니다. (백엔드 `DEMO_PASSWORD=testory-demo-1234`)
 
 로컬 개발(`npm run dev`)에서는 로그인 화면에 **관리자로 로그인 / 테스터로 로그인**(tester01) 빠른 로그인 버튼이 보입니다. 운영 빌드에는 들어가지 않습니다.
 
 ## 주요 기능
 
 - **방문자**: 모집글 목록(기기 종류·모집 상태 필터 — 기본은 모집 중, 제목 검색, 남은 자리)과 상세(진행 단계, 모집 마감일·테스트 기간·피드백 마감일)
-- **테스터**: 회원가입(브라우저로 OS 자동 선택 + 모델 목록 선택, 없으면 "기타"로 직접 입력), 신청·취소·재신청, 내 신청(상태 필터, 신청 당시 기기, 모집글별 내 피드백 수), 피드백 작성(유형 직접 선택, 테스트 중일 때만), 마이페이지에서 내 기기 수정(저장 전 확인 창)
-- **관리자**: 대시보드(숫자 카드 모집 중·마감 임박·AI 분석 필요, 진행 단계 필터, 검색), 모집글 등록·수정(피드백 마감일, 모든 기기 / 선택한 기기만)·삭제(Soft Delete)·**복구**·마감/마감 해제, 모집글 상세 탭(신청자 · 피드백 · **AI 분석** — 버전별 저장·이전 버전 조회·확인 완료), 사용자 메뉴의 시연 데이터 초기화. 관리자는 신청·피드백을 하지 않습니다.
+- **테스터**: 회원가입(브라우저로 OS 자동 선택 + 모델 목록 선택, 없으면 "기타"로 직접 입력), 신청·취소·재신청, 내 신청(상태 필터, 취소, 모집글별 피드백 쓰기·내 피드백 바로가기), 피드백 작성(유형 직접 선택, 테스트 중일 때만), 마이페이지에서 내 기기 수정(저장 전 확인 창)
+- **관리자**: 대시보드(숫자 카드 모집 중·마감 임박·AI 분석 필요, 진행 단계 필터, 검색), 모집글 등록·수정(피드백 마감일, 모든 기기 / 선택한 기기만)·삭제(Soft Delete)·**복구**·마감/마감 해제, 모집글 상세 탭(신청자 · 피드백 · **AI 분석** — 진행 상황 표시, 전체 요약과 4칸 결과의 근거 피드백·참고자료·AI 조치 제안, 버전별 저장·이전 버전 조회·확인 완료), 사용자 메뉴의 시연 데이터 초기화. 관리자는 신청·피드백을 하지 않습니다.
 
 ### 화면 주소
 
@@ -121,11 +124,15 @@ E2E 는 시작할 때 시연 데이터를 초기화하므로 **같은 DB 의 데
 | Build Command | `npm run build` (기본값) |
 | Output Directory | 기본값 (`.next`) |
 | Install Command | `npm ci` (기본값) |
-| Node.js | 22.x |
+| Node.js | 기본값 (22.x 이상) |
+
+| 환경변수 (Vercel) | 값 |
+|---|---|
+| `BACKEND_URL` | `https://testory-level01-backend.onrender.com` (Production·Preview) |
 
 1. Vercel 에서 이 저장소를 Import 합니다.
-2. Environment Variables 에 `BACKEND_URL` = Render 백엔드 주소(예: `https://testory-backend.onrender.com`)를 Production·Preview 모두에 넣습니다.
-3. 배포된 Vercel 주소를 **백엔드의 `FRONTEND_URL`** 에 넣습니다(미리보기 주소도 쓰려면 쉼표로 추가). 백엔드는 변경 요청의 `Origin` 이 이 목록에 있을 때만 받습니다.
+2. Environment Variables 에 `BACKEND_URL` 을 끝에 `/` 없이 넣습니다. 이 값은 **빌드할 때 rewrite 에 고정**되므로 Deploy 전에 넣고, 바꾼 뒤에는 반드시 Redeploy 합니다.
+3. 배포된 Vercel 주소(`https://testory-level01-frontend.vercel.app`)를 **백엔드의 `FRONTEND_URL`** 에 그대로 넣습니다(미리보기 주소도 쓰려면 쉼표로 추가). 백엔드는 변경 요청의 `Origin` 이 이 목록에 있을 때만 받으므로, 다르면 로그인이 403 으로 막힙니다.
 4. 무료 Render 서버는 잠들 수 있어 첫 접속이 느릴 수 있습니다(약 1분).
 
 Preview 와 Production 의 차이: 둘 다 같은 구조지만 주소가 다릅니다. Preview 에서 로그인·신청을 시험하려면 그 미리보기 주소가 백엔드 `FRONTEND_URL` 에도 들어 있어야 합니다.
