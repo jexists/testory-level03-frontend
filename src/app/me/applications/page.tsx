@@ -10,11 +10,8 @@ export const metadata: Metadata = { title: '내 신청' };
 export default async function MyApplicationsPage() {
   const items = await serverApi<MyApplication[]>('/me/applications');
   return (
-    <div className="container-page space-y-6 py-8 sm:py-10">
-      <div className="space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl">내 신청</h1>
-        <p className="text-muted">신청한 모집글과, 신청할 때의 기기 정보를 확인해요.</p>
-      </div>
+    <div className="space-y-6">
+      <p className="text-muted">신청한 모집글과, 신청할 때의 기기 정보를 확인해요.</p>
       <div className="panel overflow-hidden">
         {items.length > 0 ? (
           <MyApplications items={items} />

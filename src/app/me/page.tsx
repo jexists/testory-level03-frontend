@@ -9,11 +9,8 @@ export default async function MyPage() {
   const user = await getCurrentUser();
   if (!user) redirect('/login?next=/me');
   return (
-    <div className="container-page space-y-6 py-8 sm:py-10">
-      <div className="space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl">마이페이지</h1>
-        <p className="text-muted">내 정보를 확인하고 기기를 바꿔요.</p>
-      </div>
+    <div className="space-y-6">
+      <p className="text-muted">내 정보를 확인하고 기기를 바꿔요.</p>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[18rem_minmax(0,1fr)] lg:items-start">
         <section aria-labelledby="account" className="panel space-y-3 p-5">
           <h2 id="account" className="text-base">

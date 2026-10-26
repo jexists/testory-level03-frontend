@@ -9,11 +9,8 @@ export const metadata: Metadata = { title: '내 피드백' };
 export default async function MyFeedbacksPage() {
   const items = await serverApi<MyFeedback[]>('/me/feedbacks');
   return (
-    <div className="container-page space-y-6 py-8 sm:py-10">
-      <div className="space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl">내 피드백</h1>
-        <p className="text-muted">내가 남긴 피드백을 유형과 함께 모아 봐요.</p>
-      </div>
+    <div className="space-y-6">
+      <p className="text-muted">내가 남긴 피드백을 유형과 함께 모아 봐요.</p>
       <div className="panel overflow-hidden">
         {items.length > 0 ? (
           <ul className="divide-y divide-line">
