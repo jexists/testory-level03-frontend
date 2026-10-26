@@ -20,7 +20,7 @@ export function deviceIssues(rows: DeviceRow[]): string[] {
   const allOs = new Set(rows.filter((r) => r.scope === 'ALL').map((r) => r.os));
   const seen = new Set<string>();
   for (const r of rows) {
-    if (r.scope === 'MODEL' && allOs.has(r.os)) issues.add(`${OS_LABEL[r.os]} 전체를 허용했으니 ${OS_LABEL[r.os]} 모델은 따로 고를 필요가 없어요.`);
+    if (r.scope === 'MODEL' && allOs.has(r.os)) issues.add(`${OS_LABEL[r.os]} 모든 모델을 골랐으니 특정 모델은 따로 넣지 않아도 돼요.`);
     const key = `${r.os}:${r.scope}:${r.scope === 'MODEL' ? r.deviceModelId : ''}`;
     if (r.scope === 'ALL' || r.deviceModelId !== null) {
       if (seen.has(key)) issues.add('같은 기기 조건을 두 번 넣을 수 없어요.');
@@ -33,13 +33,15 @@ export function deviceIssues(rows: DeviceRow[]): string[] {
 interface Props {
   value: DeviceRow[];
   onChange: (rows: DeviceRow[]) => void;
-  /** 켜져 있으면 조건 줄을 숨기고 모든 기기를 받는다 */
+  /** true 면 조건 줄을 숨기고 모든 기기를 받는다 */
   anyDevice: boolean;
   onAnyDeviceChange: (on: boolean) => void;
   error?: string;
 }
 
 const DEFAULT_ROW: DeviceRow = { os: 'ANDROID', scope: 'ALL', deviceModelId: null };
+const modeClass =
+  'flex h-10 cursor-pointer items-center gap-2 rounded-control border border-line-strong bg-surface px-4 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-tint has-[:checked]:text-brand-ink';
 
 export function DeviceConditionsEditor({ value, onChange, anyDevice, onAnyDeviceChange, error }: Props) {
   const [models, setModels] = useState<DeviceModel[] | null>(null);
@@ -59,25 +61,27 @@ export function DeviceConditionsEditor({ value, onChange, anyDevice, onAnyDevice
   const hints = deviceIssues(value);
 
   return (
-    <fieldset className="space-y-3" aria-describedby={error ? 'devices-error' : 'devices-hint'}>
-      <legend className="text-sm font-semibold text-ink">허용 기기 조건</legend>
-      <p id="devices-hint" className="text-xs text-muted">
-        신청할 수 있는 기기를 정해요. 여러 줄을 넣을 수 있어요. 조건을 고쳐도 이미 신청한 사람의 신청은 그대로예요.
-      </p>
-
-      <label className="flex w-fit cursor-pointer items-center gap-2 text-sm font-medium text-ink">
-        <input
-          type="checkbox"
-          className="size-4 accent-brand"
-          checked={anyDevice}
-          onChange={(e) => {
-            onAnyDeviceChange(e.target.checked);
-            if (!e.target.checked && value.length === 0) onChange([DEFAULT_ROW]);
-          }}
-        />
-        모든 기기 받기
-        <span className="font-normal text-muted">(OS·모델 구분 없이, 직접 입력한 기기도 포함)</span>
-      </label>
+    <fieldset className="space-y-3" aria-describedby={error && !anyDevice ? 'devices-error' : undefined}>
+      <legend className="mb-2 text-sm font-semibold text-ink">허용 기기 조건</legend>
+      <div className="flex flex-wrap items-center gap-3">
+        <label className={modeClass}>
+          <input type="radio" name="device-mode" className="accent-brand" checked={anyDevice} onChange={() => onAnyDeviceChange(true)} />
+          모든 기기
+        </label>
+        <label className={modeClass}>
+          <input
+            type="radio"
+            name="device-mode"
+            className="accent-brand"
+            checked={!anyDevice}
+            onChange={() => {
+              onAnyDeviceChange(false);
+              if (value.length === 0) onChange([DEFAULT_ROW]);
+            }}
+          />
+          선택한 기기만
+        </label>
+      </div>
 
       {!anyDevice && (
         <>
@@ -99,7 +103,7 @@ export function DeviceConditionsEditor({ value, onChange, anyDevice, onAnyDevice
                       id={`device-${i}-scope`}
                       value={row.scope}
                       options={[
-                        { value: 'ALL', label: 'OS 전체' },
+                        { value: 'ALL', label: '모든 모델' },
                         { value: 'MODEL', label: '특정 모델' },
                       ]}
                       onValueChange={(v) => update(i, { scope: v as DeviceScope, deviceModelId: null })}
@@ -117,11 +121,16 @@ export function DeviceConditionsEditor({ value, onChange, anyDevice, onAnyDevice
                       />
                     </RowField>
                   ) : (
-                    <p className="hidden pb-2.5 text-sm text-muted sm:block">{OS_LABEL[row.os]} 기기는 모델과 관계없이 모두 신청할 수 있어요.</p>
+                    <span aria-hidden className="hidden sm:block" />
                   )}
-                  <Button variant="ghost" size="sm" className="justify-self-start sm:mb-1" onClick={() => onChange(value.filter((_, idx) => idx !== i))} aria-label={`기기 조건 ${i + 1}번 줄 삭제하기`}>
+                  <Button
+                    variant="ghost"
+                    className="w-10 justify-self-start px-0!"
+                    onClick={() => onChange(value.filter((_, idx) => idx !== i))}
+                    aria-label={`기기 조건 ${i + 1}번 줄 삭제하기`}
+                    title={`기기 조건 ${i + 1}번 줄 삭제하기`}
+                  >
                     <Trash2 className="size-4" aria-hidden />
-                    줄 삭제
                   </Button>
                 </li>
               );
