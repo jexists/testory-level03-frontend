@@ -4,7 +4,7 @@ import { Loader2 } from 'lucide-react';
 import type { ButtonHTMLAttributes, ComponentProps } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger';
-type Size = 'md' | 'sm';
+type Size = 'lg' | 'md' | 'sm';
 
 const base =
   'inline-flex items-center justify-center gap-2 rounded-control font-semibold whitespace-nowrap transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-55';
@@ -17,6 +17,7 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
+  lg: 'h-12 rounded-xl px-5 text-base',
   md: 'h-10 px-4 text-sm',
   sm: 'h-8 px-3 text-sm',
 };

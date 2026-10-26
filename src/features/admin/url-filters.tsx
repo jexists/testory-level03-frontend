@@ -4,7 +4,8 @@ import clsx from 'clsx';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input, Select } from '@/components/ui/field';
+import { Input } from '@/components/ui/field';
+import { Select } from '@/components/ui/select';
 
 export interface Option {
   value: string;
@@ -64,14 +65,7 @@ export function SelectParam({ id, label, param, options, placeholder }: { id: st
       <label htmlFor={id} className="block text-sm font-semibold text-ink">
         {label}
       </label>
-      <Select id={id} value={current} onChange={(e) => nav.set(param, e.target.value)}>
-        <option value="">{placeholder}</option>
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </Select>
+      <Select id={id} value={current} options={[{ value: '', label: placeholder }, ...options]} onValueChange={(v) => nav.set(param, v)} />
     </div>
   );
 }

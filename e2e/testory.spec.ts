@@ -5,7 +5,7 @@ const PASSWORD = process.env.DEMO_PASSWORD ?? 'testory-demo-1234';
 async function login(page: Page, email: string) {
   await page.goto('/login');
   await page.getByLabel('이메일').fill(email);
-  await page.getByLabel('비밀번호').fill(PASSWORD);
+  await page.getByLabel('비밀번호', { exact: true }).fill(PASSWORD);
   await page.getByRole('button', { name: '로그인' }).click();
   await page.waitForURL((url) => !url.pathname.startsWith('/login'));
 }
@@ -102,7 +102,8 @@ test('관리자는 현황과 AI 분석 이전 버전을 본다', async ({ page }
   await expect(page.getByText('버그 피드백')).toBeVisible();
 
   await page.goto('/admin/analysis');
-  await page.getByLabel('모집글').selectOption({ label: '알림 기능 테스트' });
+  await page.getByLabel('모집글').click();
+  await page.getByRole('option', { name: '알림 기능 테스트' }).click();
   await expect(page.getByText('v2').first()).toBeVisible();
   await page.getByRole('link', { name: /v1/ }).first().click();
   await expect(page.getByText('반복되는 문제')).toBeVisible();

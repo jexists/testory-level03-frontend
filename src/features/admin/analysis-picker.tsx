@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Select } from '@/components/ui/field';
+import { Select } from '@/components/ui/select';
 
 export interface PickerOption {
   id: number;
@@ -17,16 +17,10 @@ export function AnalysisPicker({ options, value }: { options: PickerOption[]; va
       </label>
       <Select
         id="analysis-recruitment"
-        value={value ?? ''}
-        onChange={(e) => router.push(e.target.value ? `/admin/analysis?recruitmentId=${e.target.value}` : '/admin/analysis')}
-      >
-        <option value="">모집글을 골라 주세요</option>
-        {options.map((o) => (
-          <option key={o.id} value={o.id}>
-            {o.label}
-          </option>
-        ))}
-      </Select>
+        value={value === undefined ? '' : String(value)}
+        options={[{ value: '', label: '모집글을 골라 주세요' }, ...options.map((o) => ({ value: String(o.id), label: o.label }))]}
+        onValueChange={(v) => router.push(v ? `/admin/analysis?recruitmentId=${v}` : '/admin/analysis')}
+      />
     </div>
   );
 }
