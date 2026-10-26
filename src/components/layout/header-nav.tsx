@@ -51,9 +51,15 @@ export function HeaderNav({ user }: { user: User | null }) {
                 로그아웃 ({user.nickname})
               </button>
             ) : (
-              <Link href="/login" onClick={() => setOpen(false)} className="mt-2 rounded-control bg-brand-tint py-2.5 text-center text-sm font-semibold text-brand-ink">
-                로그인
-              </Link>
+              <div className="mt-2 flex items-center justify-center">
+                <Link href="/login" onClick={() => setOpen(false)} className="px-5 py-2.5 text-sm font-medium text-ink">
+                  로그인
+                </Link>
+                <span aria-hidden className="h-3.5 w-px bg-line" />
+                <Link href="/signup" onClick={() => setOpen(false)} className="px-5 py-2.5 text-sm font-medium text-ink">
+                  회원가입
+                </Link>
+              </div>
             )}
           </nav>
         </div>

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import type { User } from '@/lib/types';
-import { LinkButton } from '@/components/ui/button';
 import { HeaderNav } from './header-nav';
 
 export function Logo() {
@@ -27,11 +26,15 @@ export function SiteHeader({ user }: { user: User | null }) {
           <HeaderNav user={user} />
         </div>
         {!user && (
-          <div className="hidden items-center gap-2 md:flex">
-            <LinkButton href="/login" variant="secondary" size="sm" className="border-transparent bg-brand-tint text-brand-ink hover:bg-brand/15">
+          <nav aria-label="계정" className="hidden items-center md:flex">
+            <Link href="/login" className="rounded-control px-4 py-2 text-sm font-medium text-ink transition-colors hover:text-brand-ink">
               로그인
-            </LinkButton>
-          </div>
+            </Link>
+            <span aria-hidden className="h-3.5 w-px bg-line" />
+            <Link href="/signup" className="rounded-control px-4 py-2 text-sm font-medium text-ink transition-colors hover:text-brand-ink">
+              회원가입
+            </Link>
+          </nav>
         )}
       </div>
     </header>
