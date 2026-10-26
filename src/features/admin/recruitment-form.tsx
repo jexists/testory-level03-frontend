@@ -118,7 +118,8 @@ export function RecruitmentForm({ recruitment }: Props) {
   }
 
   const kinds = Object.keys(KIND_LABEL) as RecruitmentKind[];
-  const capacityHint = recruitment && recruitment.participants > 0 ? `현재 ${recruitment.participants}명이 참여 중이라 정원은 ${recruitment.participants}명보다 줄일 수 없어요.` : '1명 이상 50명 이하로 정해요.';
+  // 참여자가 있으면 줄일 수 없다는 제약이라 늘 보이게 두고, 기본 범위 안내는 툴팁으로 둔다.
+  const capacityHint = recruitment && recruitment.participants > 0 ? `현재 ${recruitment.participants}명이 참여 중이라 정원은 ${recruitment.participants}명보다 줄일 수 없어요.` : undefined;
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="panel space-y-6 p-5 sm:p-6">
@@ -149,7 +150,7 @@ export function RecruitmentForm({ recruitment }: Props) {
         )}
       </fieldset>
 
-      <Field id="capacity" label="정원 (명)" hint={capacityHint} error={errors.capacity?.message} className="max-w-xs">
+      <Field id="capacity" label="정원 (명)" info="1명 이상 50명 이하로 정해요." hint={capacityHint} error={errors.capacity?.message} className="max-w-xs">
         <Input
           id="capacity"
           type="number"
@@ -163,8 +164,8 @@ export function RecruitmentForm({ recruitment }: Props) {
       </Field>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <Field id="startAt" label="모집 마감일" hint="이날 테스트가 시작돼요. 정원이 다 차면 바로 시작해요." error={errors.startAt?.message}>
-          <Input id="startAt" type="datetime-local" aria-invalid={!!errors.startAt} aria-describedby={describedBy('startAt', errors.startAt?.message, true)} {...register('startAt')} />
+        <Field id="startAt" label="모집 마감일" info="이날 테스트가 시작돼요. 정원이 다 차면 바로 시작해요." error={errors.startAt?.message}>
+          <Input id="startAt" type="datetime-local" aria-invalid={!!errors.startAt} aria-describedby={describedBy('startAt', errors.startAt?.message)} {...register('startAt')} />
         </Field>
         <Field id="endAt" label="테스트 종료일" error={errors.endAt?.message}>
           <Input
@@ -179,12 +180,12 @@ export function RecruitmentForm({ recruitment }: Props) {
             })}
           />
         </Field>
-        <Field id="feedbackDueAt" label="피드백 마감일" hint="기본은 종료일 3일 뒤예요. 이 시각까지 피드백을 받아요." error={errors.feedbackDueAt?.message}>
+        <Field id="feedbackDueAt" label="피드백 마감일" info="기본은 종료일 3일 뒤예요. 이 시각까지 피드백을 받아요." error={errors.feedbackDueAt?.message}>
           <Input
             id="feedbackDueAt"
             type="datetime-local"
             aria-invalid={!!errors.feedbackDueAt}
-            aria-describedby={describedBy('feedbackDueAt', errors.feedbackDueAt?.message, true)}
+            aria-describedby={describedBy('feedbackDueAt', errors.feedbackDueAt?.message)}
             {...register('feedbackDueAt', {
               onChange: () => setAutoDue(false),
             })}

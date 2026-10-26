@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: '시연 데이터' };
 export default function AdminDemoPage() {
   return (
     <>
-      <PageHeader title="시연 데이터" description="발표나 시연 전에 화면을 채워 둘 가상 데이터를 만들어요." />
+      <PageHeader title="시연 데이터" />
       <section aria-labelledby="demo-reset" className="panel max-w-2xl space-y-5 p-5 sm:p-6">
         <div className="space-y-2">
           <h2 id="demo-reset" className="text-lg">

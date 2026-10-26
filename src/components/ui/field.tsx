@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { forwardRef, useState } from 'react';
+import { InfoTip } from './info-tip';
 
 export const controlClass =
   'block w-full border border-line-strong bg-surface px-3 text-ink placeholder:text-muted transition-colors hover:border-ink-soft focus-visible:border-brand focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-brand disabled:cursor-not-allowed disabled:bg-sunken aria-[invalid=true]:border-danger aria-[invalid=true]:outline-danger';
@@ -18,18 +19,30 @@ interface FieldProps {
   id: string;
   label: string;
   hint?: ReactNode;
+  /** 늘 보일 필요는 없는 짧은 보충 설명: 라벨 옆 i 툴팁으로 보여 준다 */
+  info?: ReactNode;
   error?: string;
   children: ReactNode;
   className?: string;
 }
 
 /** 라벨 + 입력 + 도움말/오류. 오류는 입력과 aria-describedby 로 연결한다. */
-export function Field({ id, label, hint, error, children, className }: FieldProps) {
+export function Field({ id, label, hint, info, error, children, className }: FieldProps) {
+  const labelEl = (
+    <label htmlFor={id} className="block text-sm font-semibold text-ink">
+      {label}
+    </label>
+  );
   return (
     <div className={clsx('space-y-2', className)}>
-      <label htmlFor={id} className="block text-sm font-semibold text-ink">
-        {label}
-      </label>
+      {info ? (
+        <div className="flex items-center gap-0.5">
+          {labelEl}
+          <InfoTip label={label} className="-my-1">{info}</InfoTip>
+        </div>
+      ) : (
+        labelEl
+      )}
       {children}
       {hint && !error && (
         <p id={`${id}-hint`} className="text-xs text-muted">

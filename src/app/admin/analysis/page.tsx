@@ -57,7 +57,7 @@ export default async function AdminAnalysisPage(props: { searchParams: Promise<S
   const recruitmentId = toPositiveInt(first(sp.recruitmentId));
   const versionNo = toPositiveInt(first(sp.version));
 
-  const header = <PageHeader title="AI 분석" description="모집글의 피드백을 AI가 종합해요. 저장된 분석은 고치거나 지울 수 없어요." />;
+  const header = <PageHeader title="AI 분석" />;
 
   let recruitments: Page<Recruitment>;
   try {

@@ -25,7 +25,7 @@ export default async function AdminFeedbacksPage(props: { searchParams: Promise<
   const page = toPositiveInt(first(sp.page)) ?? 1;
   const filtered = !!type || !!recruitmentId;
 
-  const header = <PageHeader title="피드백 관리" description="테스터가 남긴 피드백을 유형·모집글별로 모아 봐요." />;
+  const header = <PageHeader title="피드백 관리" />;
 
   let data: Page<AdminFeedback>;
   let recruitments: Page<Recruitment>;
@@ -105,14 +105,14 @@ export default async function AdminFeedbacksPage(props: { searchParams: Promise<
                   </summary>
                 </details>
                 <p className="text-xs text-muted">
-                  {f.recruitmentTitle} · 작성자 <span className="font-semibold text-ink-soft">{f.nickname}</span> ({f.authorFeedbackCount}건)
+                  {f.recruitmentTitle} · 작성자 <span className="font-semibold text-ink-soft">{f.nickname}</span> (전체 {f.authorFeedbackCount}건)
                 </p>
               </li>
             ))}
           </ul>
         )}
       </div>
-      <p className="text-xs text-muted">전체 {data.total}건 · 작성자 옆 숫자는 그 사람이 쓴 전체 피드백 수예요.</p>
+      <p className="text-xs text-muted">전체 {data.total}건</p>
       <Pagination page={data.page} total={data.total} limit={data.limit} hrefFor={hrefFor} />
     </>
   );

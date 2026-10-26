@@ -26,7 +26,6 @@ export default async function AdminRecruitmentsPage(props: { searchParams: Promi
   const header = (
     <PageHeader
       title="모집글 관리"
-      description="모집글을 만들고, 마감하고, 신청자와 AI 분석 결과를 확인해요."
       actions={<LinkButton href="/admin/recruitments/new">새 모집글 등록</LinkButton>}
     />
   );
@@ -99,9 +98,7 @@ export default async function AdminRecruitmentsPage(props: { searchParams: Promi
           <RecruitmentTable items={data.items} />
         )}
       </div>
-      <p className="text-xs text-muted">
-        전체 {data.total}개 · IP 주소는 서버가 요청에서 읽어 기록한 값이며 관리자에게만 보여요.
-      </p>
+      <p className="text-xs text-muted">전체 {data.total}개</p>
       <Pagination page={data.page} total={data.total} limit={data.limit} hrefFor={hrefFor} />
     </>
   );

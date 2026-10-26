@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import clsx from 'clsx';
 import { EmptyState } from '@/components/ui/state-view';
+import { InfoTip } from '@/components/ui/info-tip';
 import { LinkButton } from '@/components/ui/button';
 import { StageBadge } from '@/components/ui/badge';
 import { LoadError } from '@/features/admin/load-error';
@@ -14,12 +15,14 @@ import type { Dashboard, DashboardRecruitment, Stage } from '@/lib/types';
 
 export const metadata: Metadata = { title: '관리자 대시보드' };
 
-function Figure({ label, value, hint }: { label: string; value: number; hint: string }) {
+function Figure({ label, value, info }: { label: string; value: number; info?: string }) {
   return (
     <div className="px-4 py-5 sm:px-6">
-      <dt className="text-xs text-muted sm:text-sm">{label}</dt>
-      <dd className="mt-1 font-mono text-2xl font-medium tabular-nums sm:text-3xl">{value.toLocaleString('ko-KR')}</dd>
-      <dd className="mt-1 text-xs text-muted">{hint}</dd>
+      <dt className="flex items-center gap-0.5 text-xs text-muted sm:text-sm">
+        {label}
+        {info && <InfoTip label={label}>{info}</InfoTip>}
+      </dt>
+      <dd className="mt-1 font-mono text-2xl font-medium tabular-nums">{value.toLocaleString('ko-KR')}</dd>
     </div>
   );
 }
@@ -94,9 +97,9 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
       <PageHeader title="대시보드" />
 
       <dl className="panel grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0" aria-label="모집 현황">
-        <Figure label="모집 중" value={data.counts.recruiting} hint="지금 신청을 받고 있어요" />
-        <Figure label="마감 7일 이내" value={data.counts.closingSoon} hint="모집 마감일이 일주일 안에 와요" />
-        <Figure label="정원 차서 바로 시작" value={data.counts.filledEarly} hint="정원이 다 차서 테스트를 일찍 시작했어요" />
+        <Figure label="모집 중" value={data.counts.recruiting} />
+        <Figure label="마감 7일 이내" value={data.counts.closingSoon} info="모집 마감일이 일주일 안에 와요." />
+        <Figure label="정원 차서 바로 시작" value={data.counts.filledEarly} />
       </dl>
 
       <section aria-labelledby="by-stage" className="space-y-3">

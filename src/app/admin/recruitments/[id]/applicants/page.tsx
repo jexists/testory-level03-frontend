@@ -58,7 +58,7 @@ export default async function ApplicantsPage(props: { params: Promise<{ id: stri
   return (
     <>
       {back}
-      <PageHeader title="신청자 조회" description="신청 당시의 기기 정보와, 이 모집글에 쓴 피드백 수를 함께 보여 줘요." />
+      <PageHeader title="신청자 조회" />
 
       <section aria-label="모집글 요약" className="panel flex flex-wrap items-center gap-x-6 gap-y-3 p-4">
         <div className="min-w-0 flex-1 space-y-1.5">
