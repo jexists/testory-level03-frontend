@@ -18,7 +18,7 @@ export function Segmented({ label, items }: { label: string; items: SegmentItem[
           scroll={false}
           aria-current={i.active ? 'true' : undefined}
           className={clsx(
-            'rounded-[6px] px-3 py-1.5 text-sm font-medium transition-colors',
+            'whitespace-nowrap rounded-[6px] px-3 py-1.5 text-sm font-medium transition-colors',
             i.active ? 'bg-ink text-white' : 'text-ink-soft hover:bg-sunken',
           )}
         >

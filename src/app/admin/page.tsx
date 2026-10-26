@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import clsx from 'clsx';
 import { EmptyState } from '@/components/ui/state-view';
 import { InfoTip } from '@/components/ui/info-tip';
 import { LinkButton } from '@/components/ui/button';
 import { Pagination } from '@/components/ui/pagination';
+import { Segmented } from '@/components/ui/segmented';
 import { AdminRecruitmentRow } from '@/features/admin/admin-recruitment-row';
 import { LoadError } from '@/features/admin/load-error';
 import { PageHeader } from '@/features/admin/page-header';
@@ -64,7 +64,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     );
   }
 
-  // 필터 칩·쪽 번호를 눌러도 검색어는 그대로 둔다.
+  // 필터·쪽 번호를 눌러도 검색어는 그대로 둔다.
   const hrefFor = (over: { filter?: AdminFilter; page?: number }) =>
     `/admin${toQuery({ filter: over.filter, q, page: over.page && over.page > 1 ? over.page : undefined })}`;
   const tabs: { value?: AdminFilter; label: string; count: number }[] = [
@@ -101,28 +101,12 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
           <SearchParam id="q" label="모집글 제목 검색" hideLabel param="q" placeholder="모집글 검색" />
         </div>
 
-        <nav aria-label="모집글 필터" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-          <ul className="flex gap-1.5">
-            {tabs.map((t) => {
-              const on = t.value === filter;
-              return (
-                <li key={t.label}>
-                  <Link
-                    href={hrefFor({ filter: t.value })}
-                    aria-current={on ? 'page' : undefined}
-                    className={clsx(
-                      'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-control border px-3 text-sm font-medium transition-colors',
-                      on ? 'border-brand bg-brand text-white' : 'border-line-strong bg-surface text-ink-soft hover:bg-sunken',
-                    )}
-                  >
-                    {t.label}
-                    <span className={clsx('font-mono text-xs tabular-nums', on ? 'text-white/80' : 'text-muted')}>{t.count}</span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+        <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <Segmented
+            label="모집글 필터"
+            items={tabs.map((t) => ({ label: `${t.label} ${t.count}`, href: hrefFor({ filter: t.value }), active: t.value === filter }))}
+          />
+        </div>
 
         {list.items.length === 0 ? (
           <div className="panel">
