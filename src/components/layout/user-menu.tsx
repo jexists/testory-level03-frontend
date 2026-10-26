@@ -1,7 +1,7 @@
 'use client';
 
 import clsx from 'clsx';
-import { ChevronDown, LogOut, Settings, UserRound } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogOut, RotateCcw, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
@@ -27,8 +27,8 @@ export function useLogout(onDone?: () => void) {
 
 const itemClass = 'flex w-full items-center gap-2 rounded-control px-3 py-2 text-left text-sm font-medium text-ink-soft hover:bg-sunken';
 
-/** 닉네임을 누르면 마이페이지·관리자·로그아웃이 펼쳐지는 사용자 메뉴 (데스크톱) */
-export function UserMenu({ user }: { user: User }) {
+/** 닉네임을 누르면 마이페이지·대시보드(관리자)·로그아웃이 펼쳐지는 사용자 메뉴 (데스크톱) */
+export function UserMenu({ user, onDemoReset }: { user: User; onDemoReset: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const logout = useLogout(() => setOpen(false));
@@ -61,16 +61,30 @@ export function UserMenu({ user }: { user: User }) {
         <ChevronDown className={clsx('size-4 text-muted transition-transform', open && 'rotate-180')} aria-hidden />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 top-full z-40 mt-1 w-44 rounded-control border border-line bg-surface p-1 shadow-overlay">
+        <div role="menu" className="absolute right-0 top-full z-40 mt-1 w-48 rounded-control border border-line bg-surface p-1 shadow-overlay">
           <Link href="/me" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
             <UserRound className="size-4" aria-hidden />
             마이페이지
           </Link>
           {user.role === 'ADMIN' && (
-            <Link href="/admin" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
-              <Settings className="size-4" aria-hidden />
-              관리자
-            </Link>
+            <>
+              <Link href="/admin" role="menuitem" onClick={() => setOpen(false)} className={itemClass}>
+                <LayoutDashboard className="size-4" aria-hidden />
+                대시보드
+              </Link>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onDemoReset();
+                }}
+                className={itemClass}
+              >
+                <RotateCcw className="size-4" aria-hidden />
+                시연 데이터 초기화
+              </button>
+            </>
           )}
           <button type="button" role="menuitem" onClick={logout} className={itemClass}>
             <LogOut className="size-4" aria-hidden />

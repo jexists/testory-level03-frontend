@@ -1,16 +1,7 @@
 import { redirect } from 'next/navigation';
 import { LinkButton } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/state-view';
-import { NavLink } from '@/features/admin/nav-link';
 import { getCurrentUser } from '@/lib/server-api';
-
-const items = [
-  { href: '/admin', label: '대시보드', exact: true },
-  { href: '/admin/recruitments', label: '모집글 관리' },
-  { href: '/admin/feedbacks', label: '피드백' },
-  { href: '/admin/analysis', label: 'AI 분석' },
-  { href: '/admin/demo', label: '시연 데이터' },
-];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getCurrentUser();
@@ -30,22 +21,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     );
   }
 
-  return (
-    <div className="container-page py-6 md:flex md:gap-8 md:py-8">
-      <aside className="md:w-44 md:shrink-0">
-        <nav aria-label="관리자 메뉴" className="-mx-4 overflow-x-auto border-b border-line px-4 pb-3 sm:-mx-6 sm:px-6 md:sticky md:top-20 md:mx-0 md:overflow-visible md:border-0 md:px-0 md:pb-0">
-          <ul className="flex gap-1 md:flex-col">
-            {items.map((i) => (
-              <li key={i.href}>
-                <NavLink href={i.href} exact={i.exact} variant="side">
-                  {i.label}
-                </NavLink>
-              </li>
-            ))}
-          </ul>
-        </nav>
-      </aside>
-      <div className="mt-6 min-w-0 flex-1 space-y-6 md:mt-0">{children}</div>
-    </div>
-  );
+  // 관리자 화면은 대시보드 하나에서 모집글 상세로 이어지므로 따로 메뉴를 두지 않는다. 시연 데이터 초기화는 사용자 메뉴에 있다.
+  return <div className="container-page space-y-6 py-6 md:py-8">{children}</div>;
 }

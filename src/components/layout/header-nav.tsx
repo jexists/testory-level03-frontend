@@ -5,12 +5,15 @@ import { Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { DemoResetDialog } from '@/features/admin/demo-reset';
 import type { User } from '@/lib/types';
 import { UserMenu, useLogout } from './user-menu';
 
 export function HeaderNav({ user }: { user: User | null }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  // 메뉴가 닫혀도 확인 창은 남아 있어야 하므로 여기서 연다.
+  const [demoReset, setDemoReset] = useState(false);
   const logout = useLogout(() => setOpen(false));
 
   const linkClass = (active: boolean) =>
@@ -18,7 +21,8 @@ export function HeaderNav({ user }: { user: User | null }) {
 
   return (
     <>
-      {user && <UserMenu user={user} />}
+      {user && <UserMenu user={user} onDemoReset={() => setDemoReset(true)} />}
+      {user?.role === 'ADMIN' && <DemoResetDialog open={demoReset} onClose={() => setDemoReset(false)} />}
 
       <button
         type="button"
@@ -40,9 +44,21 @@ export function HeaderNav({ user }: { user: User | null }) {
                   마이페이지
                 </Link>
                 {user.role === 'ADMIN' && (
-                  <Link href="/admin" onClick={() => setOpen(false)} className={clsx(linkClass(pathname.startsWith('/admin')), 'py-2.5')}>
-                    관리자
-                  </Link>
+                  <>
+                    <Link href="/admin" onClick={() => setOpen(false)} className={clsx(linkClass(pathname.startsWith('/admin')), 'py-2.5')}>
+                      대시보드
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOpen(false);
+                        setDemoReset(true);
+                      }}
+                      className={clsx(linkClass(false), 'py-2.5 text-left')}
+                    >
+                      시연 데이터 초기화
+                    </button>
+                  </>
                 )}
               </>
             )}
