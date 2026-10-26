@@ -1,15 +1,15 @@
 import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
-import { Chip, StageBadge } from '@/components/ui/badge';
-import { SeatStrip } from '@/components/ui/seat-strip';
+import { DeletedBadge, StageBadge } from '@/components/ui/badge';
+import { ClampedText } from '@/components/ui/clamped-text';
 import { ErrorState } from '@/components/ui/state-view';
 import { getAdminRecruitment, type AdminRecruitmentDetail } from '@/features/admin/admin-recruitment';
-import { IpDetails } from '@/features/admin/ip-details';
 import { LoadError } from '@/features/admin/load-error';
+import { count, FactGrid } from '@/features/admin/fact-grid';
 import { NavLink } from '@/features/admin/nav-link';
 import { toPositiveInt } from '@/features/admin/query';
 import { RecruitmentActions } from '@/features/admin/recruitment-actions';
-import { formatDate, formatDateYear, formatPeriod } from '@/lib/format';
+import { formatDate, formatPeriod } from '@/lib/format';
 
 /** 모집글 상세: 위에는 요약과 관리 버튼, 아래는 신청자 · 피드백 · AI 분석 탭 */
 export default async function RecruitmentDetailLayout(props: { params: Promise<{ id: string }>; children: React.ReactNode }) {
@@ -48,51 +48,63 @@ export default async function RecruitmentDetailLayout(props: { params: Promise<{
 
   const deleted = !!r.deletedAt;
   const base = `/admin/recruitments/${id}`;
+  const schedule: [string, string][] = [
+    ['모집 마감', formatDate(r.startAt)],
+    ['테스트 기간', formatPeriod(r.startAt, r.endAt)],
+    ['피드백 마감', formatDate(r.feedbackDueAt)],
+  ];
+  if (r.deletedAt) schedule.push(['삭제한 날', formatDate(r.deletedAt)]);
+  // 두 줄이 넓은 화면에서 같은 열에 맞도록 열 수를 함께 쓴다. 좁은 화면에서는 일정만 세로로 쌓는다.
+  const wide = deleted ? 'sm:grid-cols-4' : 'sm:grid-cols-3';
 
   return (
     <>
       {back}
 
-      <section aria-labelledby="recruitment-title" className={`panel space-y-4 p-5 ${deleted ? 'bg-canvas' : ''}`}>
+      <section aria-labelledby="recruitment-title" className="panel space-y-4 p-5">
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-          <div className="min-w-0 space-y-2">
-            <h1 id="recruitment-title" className={`text-2xl ${deleted ? 'text-ink-soft' : ''}`}>
+          <div className="flex min-w-0 items-center gap-2.5">
+            {deleted ? <DeletedBadge /> : <StageBadge stage={r.stage} />}
+            <h1 id="recruitment-title" className={`text-2xl ${deleted ? 'text-ink-soft line-through decoration-2' : ''}`}>
               {r.title}
             </h1>
-            <div className="flex flex-wrap items-center gap-2">
-              <StageBadge stage={r.stage} />
-              {deleted && <Chip>삭제됨 · {formatDateYear(r.deletedAt as string)}</Chip>}
-            </div>
           </div>
           <RecruitmentActions id={r.id} title={r.title} isClosed={r.isClosed} deleted={deleted} />
         </div>
-        <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
-          <div className="space-y-1.5">
-            <p className="text-sm text-muted">
-              모집 마감 {formatDate(r.startAt)} <span aria-hidden>·</span> 테스트 {formatPeriod(r.startAt, r.endAt)} <span aria-hidden>·</span> 피드백 마감{' '}
-              {formatDate(r.feedbackDueAt)}
-            </p>
-            <IpDetails r={r} />
-          </div>
-          <div className="space-y-1">
-            <SeatStrip capacity={r.capacity} filled={r.participants} closed={r.status === 'CLOSED' || deleted} />
-            <p className="font-mono text-xs text-ink-soft">
-              참여 중 {r.participants} / 정원 {r.capacity}
-            </p>
-          </div>
+        {r.description && <ClampedText className="text-sm leading-relaxed text-ink-soft">{r.description}</ClampedText>}
+        {/* 일정 한 줄, 참여·피드백 한 줄. 두 줄이 같은 열에 맞춰 선다. */}
+        <div className="space-y-4">
+          <FactGrid className={`grid-cols-1 ${wide}`} items={schedule.map(([label, value]) => ({ label, value }))} />
+          <FactGrid
+            className={`grid-cols-3 ${wide}`}
+            items={[
+              {
+                label: '참여',
+                value: (
+                  <>
+                    {r.participants} / {r.capacity}
+                    {r.cancelledCount > 0 && <span className="font-normal text-muted"> (취소: {r.cancelledCount})</span>}
+                  </>
+                ),
+              },
+              { label: '피드백', value: count(r.feedbackCount, '건') },
+              { label: '피드백 한 사람', value: count(r.feedbackAuthorCount, '명') },
+            ]}
+          />
         </div>
       </section>
 
-      <nav aria-label="모집글 상세 메뉴" className="-mx-4 overflow-x-auto border-b border-line px-4 pb-2 sm:mx-0 sm:px-0">
+      {/* 가로 스크롤 상자가 포커스 테두리를 자르지 않게 위·옆에 여백을 둔다. */}
+      <nav aria-label="모집글 상세 메뉴" className="-mx-4 overflow-x-auto border-b border-line px-4 pt-1 pb-2 sm:mx-0 sm:px-1">
         <ul className="flex gap-1">
           <li>
             <NavLink href={`${base}/applicants`} variant="tab">
-              신청자 <span className="font-mono text-xs text-muted">{r.participants}</span>
+              신청자
             </NavLink>
           </li>
           <li>
             <NavLink href={`${base}/feedbacks`} variant="tab">
-              피드백 <span className="font-mono text-xs text-muted">{r.feedbackCount}</span>
+              피드백
             </NavLink>
           </li>
           <li>

@@ -10,7 +10,7 @@ import { api, errorMessage } from '@/lib/api';
 import type { AnalysisDetail } from '@/lib/types';
 
 /** 새 분석은 5~20초쯤 걸릴 수 있다. 실행 중에는 버튼을 막아 두 번 눌리지 않게 한다. */
-export function AnalyzeButton({ recruitmentId, disabledReason }: { recruitmentId: number; disabledReason?: string }) {
+export function AnalyzeButton({ recruitmentId, disabled }: { recruitmentId: number; disabled?: boolean }) {
   const router = useRouter();
   const { toast } = useToast();
   const [running, setRunning] = useState(false);
@@ -39,12 +39,11 @@ export function AnalyzeButton({ recruitmentId, disabledReason }: { recruitmentId
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-center gap-3">
-        <Button onClick={run} loading={running} disabled={!!disabledReason}>
+        <Button onClick={run} loading={running} disabled={disabled}>
           {!running && <Sparkles className="size-4" aria-hidden />}
           {running ? '분석하는 중' : 'AI 분석 실행'}
         </Button>
         {running && <p className="text-sm text-muted">피드백을 읽고 있어요. 잠시만 기다려 주세요.</p>}
-        {disabledReason && <p className="text-sm text-muted">{disabledReason}</p>}
       </div>
       {error && <Notice tone="error">{error}</Notice>}
     </div>

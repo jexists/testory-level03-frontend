@@ -83,6 +83,8 @@ export interface Page<T> {
 export interface AdminRecruitment extends Recruitment {
   stage: Stage;
   feedbackCount: number;
+  /** 참여 중인 사람 가운데 피드백을 1건 이상 낸 사람 수 */
+  feedbackAuthorCount: number;
   bugCount: number;
   latestAnalysisVersion: number | null;
 }

@@ -36,19 +36,33 @@ function useRun() {
   return { busy, run };
 }
 
-/** 삭제한 모집글을 되살린다. 대시보드 목록과 상세 화면에서 같이 쓴다. */
-export function RestoreButton({ id, title }: { id: number; title: string }) {
+/** 삭제한 모집글을 되살린다. 모집글 상세 화면에서 쓰고, 한 번 더 물어본 뒤에 복구한다. */
+function RestoreButton({ id, title }: { id: number; title: string }) {
   const { busy, run } = useRun();
+  const [confirming, setConfirming] = useState(false);
   return (
-    <Button
-      variant="secondary"
-      size="sm"
-      loading={busy}
-      aria-label={`${title} 복구하기`}
-      onClick={() => run(() => api(`/admin/recruitments/${id}/restore`, { method: 'PATCH' }), '복구했어요. 테스터에게 다시 보여요.')}
-    >
-      복구
-    </Button>
+    <>
+      <Button variant="secondary" size="sm" disabled={busy} aria-label={`${title} 복구하기`} onClick={() => setConfirming(true)}>
+        복구
+      </Button>
+      <ConfirmDialog
+        open={confirming}
+        loading={busy}
+        title="이 모집글을 복구할까요?"
+        description={
+          <>
+            <strong className="font-semibold text-ink">{title}</strong>
+            <br />
+            복구하면 테스터에게 다시 보이고, 신청·피드백도 그대로 이어져요.
+          </>
+        }
+        confirmLabel="복구하기"
+        onCancel={() => setConfirming(false)}
+        onConfirm={() =>
+          run(() => api(`/admin/recruitments/${id}/restore`, { method: 'PATCH' }), '복구했어요. 테스터에게 다시 보여요.', () => setConfirming(false))
+        }
+      />
+    </>
   );
 }
 
@@ -78,7 +92,7 @@ export function RecruitmentActions({ id, title, isClosed, deleted }: Props) {
       >
         {isClosed ? '마감 해제' : '마감'}
       </Button>
-      <Button variant="ghost" size="sm" className="text-danger hover:bg-bug-tint" disabled={busy} aria-label={`${title} 삭제하기`} onClick={() => setConfirming(true)}>
+      <Button variant="secondary" size="sm" className="text-danger hover:bg-bug-tint" disabled={busy} aria-label={`${title} 삭제하기`} onClick={() => setConfirming(true)}>
         삭제
       </Button>
       <ConfirmDialog

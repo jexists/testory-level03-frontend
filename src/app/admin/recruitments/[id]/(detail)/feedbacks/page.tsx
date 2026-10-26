@@ -1,3 +1,4 @@
+import { ChevronDown } from 'lucide-react';
 import type { Metadata } from 'next';
 import { FeedbackTypeBadge } from '@/components/ui/badge';
 import { LinkButton } from '@/components/ui/button';
@@ -39,20 +40,21 @@ export default async function RecruitmentFeedbacksPage(props: { params: Promise<
   }
 
   const hrefFor = (p: number) => `${base}${toQuery({ type, sort: sort === 'latest' ? undefined : sort, page: p === 1 ? undefined : p })}`;
-  const disabledReason = recruitment.deletedAt
+  const description = recruitment.deletedAt
     ? '삭제된 모집글은 새로 분석할 수 없어요. 복구하면 다시 분석할 수 있어요.'
     : recruitment.feedbackCount === 0
       ? '피드백이 1건 이상 있어야 분석할 수 있어요.'
-      : undefined;
+      : '분석할 때마다 새 버전으로 저장되고, 지난 버전은 AI 분석 탭에서 다시 볼 수 있어요.';
+  const canAnalyze = !recruitment.deletedAt && recruitment.feedbackCount > 0;
 
   return (
     <>
       <div className="panel flex flex-wrap items-center justify-between gap-x-6 gap-y-3 p-4">
         <div className="space-y-0.5">
           <p className="font-semibold">이 모집글의 피드백 {recruitment.feedbackCount}건을 AI로 분석해요</p>
-          <p className="text-sm text-muted">분석할 때마다 새 버전으로 저장되고, 지난 버전은 AI 분석 탭에서 다시 볼 수 있어요.</p>
+          <p className="text-sm text-muted">{description}</p>
         </div>
-        <AnalyzeButton recruitmentId={id} disabledReason={disabledReason} />
+        <AnalyzeButton recruitmentId={id} disabled={!canAnalyze} />
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -90,31 +92,32 @@ export default async function RecruitmentFeedbacksPage(props: { params: Promise<
         ) : (
           <ul className="divide-y divide-line">
             {data.items.map((f) => (
-              <li key={f.id} className="space-y-2 px-5 py-4">
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <FeedbackTypeBadge type={f.type} />
-                  <h2 className="min-w-0 flex-1 text-base">{f.title}</h2>
-                  <time dateTime={f.createdAt} className="text-xs text-muted">
-                    {formatDateTime(f.createdAt)}
-                  </time>
-                </div>
+              <li key={f.id}>
+                {/* 닫혀 있으면 제목만, 줄을 누르면 그 자리에서 내용이 펼쳐진다. */}
                 <details className="group">
-                  <summary className="cursor-pointer list-none text-sm text-ink-soft [&::-webkit-details-marker]:hidden">
-                    <span className="line-clamp-2 whitespace-pre-line group-open:hidden">{f.content}</span>
-                    <span className="hidden whitespace-pre-line group-open:inline">{f.content}</span>
-                    <span className="mt-1 block text-xs font-semibold text-brand-ink group-open:hidden">내용 펼치기</span>
-                    <span className="mt-1 hidden text-xs font-semibold text-brand-ink group-open:block">내용 접기</span>
+                  <summary className="flex cursor-pointer list-none flex-col gap-1.5 px-5 py-4 hover:bg-canvas [&::-webkit-details-marker]:hidden">
+                    <div className="flex items-center gap-3">
+                      <FeedbackTypeBadge type={f.type} />
+                      <h2 className="line-clamp-1 min-w-0 flex-1 text-base group-open:line-clamp-none">
+                        {f.title}
+                        <span className="font-normal text-sm text-muted"> - {f.nickname}</span>
+                      </h2>
+                      <time dateTime={f.createdAt} className="hidden whitespace-nowrap text-xs text-muted sm:inline">
+                        {formatDateTime(f.createdAt)}
+                      </time>
+                      <ChevronDown className="size-4 shrink-0 text-muted transition-transform group-open:rotate-180" aria-hidden />
+                    </div>
+                    <p className="hidden whitespace-pre-line text-sm text-ink-soft group-open:block">{f.content}</p>
+                    <time dateTime={f.createdAt} className="block text-xs text-muted sm:hidden">
+                      {formatDateTime(f.createdAt)}
+                    </time>
                   </summary>
                 </details>
-                <p className="text-xs text-muted">
-                  작성자 <span className="font-semibold text-ink-soft">{f.nickname}</span> (전체 {f.authorFeedbackCount}건)
-                </p>
               </li>
             ))}
           </ul>
         )}
       </div>
-      <p className="text-xs text-muted">전체 {data.total}건</p>
       <Pagination page={data.page} total={data.total} limit={data.limit} hrefFor={hrefFor} />
     </>
   );

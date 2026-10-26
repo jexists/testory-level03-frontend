@@ -6,7 +6,7 @@ import { LoadError } from '@/features/admin/load-error';
 import { td, th } from '@/features/admin/page-header';
 import { first, toPositiveInt, type SearchParams } from '@/features/admin/query';
 import { SegmentedParam } from '@/features/admin/url-filters';
-import { formatDateTime } from '@/lib/format';
+import { formatDateTime, formatShortDateTime } from '@/lib/format';
 import { osText } from '@/lib/labels';
 import { serverApi } from '@/lib/server-api';
 import type { Applicant, Recruitment } from '@/lib/types';
@@ -34,7 +34,7 @@ export default async function ApplicantsPage(props: { params: Promise<{ id: stri
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-lg">신청자 {applicants.length}명</h2>
+        <h2 className="text-lg">신청자</h2>
         <SegmentedParam
           label="정렬"
           param="sort"
@@ -55,6 +55,9 @@ export default async function ApplicantsPage(props: { params: Promise<{ id: stri
             <thead className="border-b border-line bg-canvas">
               <tr>
                 <th scope="col" className={th}>
+                  상태
+                </th>
+                <th scope="col" className={th}>
                   닉네임
                 </th>
                 <th scope="col" className={th}>
@@ -63,32 +66,25 @@ export default async function ApplicantsPage(props: { params: Promise<{ id: stri
                 <th scope="col" className={th}>
                   신청 시각
                 </th>
-                <th scope="col" className={th}>
-                  상태
-                </th>
                 <th scope="col" className={`${th} text-right`}>
-                  이 모집글에 쓴 피드백
+                  피드백
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
               {applicants.map((a) => (
                 <tr key={a.id}>
+                  <td className={td}>{a.status === 'APPLIED' ? <Chip tone="brand">참여 중</Chip> : <Chip>취소</Chip>}</td>
                   <th scope="row" className={`${td} text-left font-semibold`}>
                     {a.nickname}
                   </th>
                   <td className={td}>
                     <span className="text-ink-soft">{osText(a.deviceType)}</span> <span className="text-xs">{a.deviceModel}</span>
                   </td>
-                  <td className={`${td} whitespace-nowrap text-ink-soft`}>{formatDateTime(a.appliedAt)}</td>
-                  <td className={td}>
-                    {a.status === 'APPLIED' ? (
-                      <Chip tone="brand">참여 중</Chip>
-                    ) : (
-                      <div className="space-y-0.5">
-                        <Chip>취소</Chip>
-                        {a.cancelledAt && <p className="text-xs text-muted">{formatDateTime(a.cancelledAt)}</p>}
-                      </div>
+                  <td className={`${td} whitespace-nowrap text-ink-soft`}>
+                    {formatDateTime(a.appliedAt)}
+                    {a.status !== 'APPLIED' && a.cancelledAt && (
+                      <span className="text-muted"> (취소 {formatShortDateTime(a.cancelledAt)})</span>
                     )}
                   </td>
                   <td className={`${td} text-right font-mono tabular-nums`}>{a.feedbackCount}건</td>
