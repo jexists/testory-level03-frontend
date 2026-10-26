@@ -9,6 +9,8 @@ import { controlClass, controlSize, type ControlSize } from './field';
 export interface SelectOption {
   value: string;
   label: string;
+  /** 고를 수 없는 항목. 목록에는 흐리게 보이고 눌러도 바뀌지 않는다. */
+  disabled?: boolean;
 }
 
 interface SelectProps {
@@ -61,11 +63,19 @@ export function Select({ id, value, options, onValueChange, placeholder, disable
       const below = window.innerHeight - rect.bottom;
       setDropUp(below < LIST_MAX_HEIGHT && rect.top > below);
     }
-    setActive(Math.max(0, options.findIndex((o) => o.value === value)));
+    const current = options.findIndex((o) => o.value === value);
+    setActive(current >= 0 ? current : step(-1, 1));
     setOpen(true);
   }
 
+  /** from 에서 dir 방향으로 고를 수 있는 다음 항목. 없으면 from 그대로 */
+  function step(from: number, dir: 1 | -1) {
+    for (let i = from + dir; i >= 0 && i < options.length; i += dir) if (!options[i].disabled) return i;
+    return from;
+  }
+
   function choose(i: number) {
+    if (options[i].disabled) return;
     onValueChange(options[i].value);
     setOpen(false);
     triggerRef.current?.focus();
@@ -82,24 +92,24 @@ export function Select({ id, value, options, onValueChange, placeholder, disable
     switch (e.key) {
       case 'ArrowDown':
         e.preventDefault();
-        setActive((i) => Math.min(options.length - 1, i + 1));
+        setActive((i) => step(i, 1));
         break;
       case 'ArrowUp':
         e.preventDefault();
-        setActive((i) => Math.max(0, i - 1));
+        setActive((i) => step(i, -1));
         break;
       case 'Home':
         e.preventDefault();
-        setActive(0);
+        setActive((i) => (step(-1, 1) >= 0 ? step(-1, 1) : i));
         break;
       case 'End':
         e.preventDefault();
-        setActive(options.length - 1);
+        setActive((i) => (step(options.length, -1) < options.length ? step(options.length, -1) : i));
         break;
       case 'Enter':
       case ' ':
         e.preventDefault();
-        if (active >= 0) choose(active);
+        if (active >= 0 && options[active]) choose(active);
         break;
       case 'Escape':
         e.preventDefault();
@@ -152,13 +162,15 @@ export function Select({ id, value, options, onValueChange, placeholder, disable
                 id={optionId(i)}
                 role="option"
                 aria-selected={isSelected}
+                aria-disabled={o.disabled || undefined}
                 onClick={() => choose(i)}
-                onMouseEnter={() => setActive(i)}
+                onMouseEnter={() => !o.disabled && setActive(i)}
                 className={clsx(
-                  'flex cursor-pointer items-center justify-between gap-2 rounded-control px-3 text-sm',
+                  'flex items-center justify-between gap-2 rounded-control px-3 text-sm',
+                  o.disabled ? 'cursor-not-allowed text-muted opacity-60' : 'cursor-pointer',
                   size === 'lg' ? 'py-2.5' : 'py-2',
                   i === active && 'bg-sunken',
-                  isSelected ? 'font-semibold text-brand' : 'text-ink',
+                  isSelected ? 'font-semibold text-brand' : !o.disabled && 'text-ink',
                 )}
               >
                 <span className="truncate">{o.label}</span>

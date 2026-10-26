@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button, LinkButton } from '@/components/ui/button';
@@ -11,8 +11,7 @@ import { Notice } from '@/components/ui/state-view';
 import { useToast } from '@/components/ui/toast';
 import { api, errorMessage } from '@/lib/api';
 import { fromLocalInput, toLocalInput } from '@/lib/format';
-import { KIND_LABEL } from '@/lib/labels';
-import type { Recruitment, RecruitmentKind } from '@/lib/types';
+import type { Recruitment } from '@/lib/types';
 import { DeviceConditionsEditor, deviceIssues, type DeviceRow } from './device-conditions-editor';
 
 const CAPACITY_MSG = '정원은 1명 이상 50명 이하로 정해 주세요.';
@@ -21,19 +20,35 @@ const DAY = 86_400_000;
 /** 피드백 마감일 기본값: 테스트 종료일 + 3일 */
 const FEEDBACK_GRACE_DAYS = 3;
 const plusGrace = (local: string) => toLocalInput(new Date(new Date(local).getTime() + FEEDBACK_GRACE_DAYS * DAY).toISOString());
+/** 새 글 기본 일정: 모집 마감은 7일 뒤 18시, 테스트는 그로부터 14일 */
+const DEFAULT_RECRUIT_DAYS = 7;
+const DEFAULT_TEST_DAYS = 14;
+function defaultSchedule() {
+  const start = new Date();
+  start.setDate(start.getDate() + DEFAULT_RECRUIT_DAYS);
+  start.setHours(18, 0, 0, 0);
+  const end = new Date(start.getTime() + DEFAULT_TEST_DAYS * DAY);
+  const endAt = toLocalInput(end.toISOString());
+  return {
+    startAt: toLocalInput(start.toISOString()),
+    endAt,
+    feedbackDueAt: plusGrace(endAt),
+  };
+}
 
 const schema = z
   .object({
     title: z.string().trim().min(1, '제목을 입력해 주세요.').max(100, '제목은 100자 이하로 써 주세요.'),
     description: z.string().trim().min(1, '설명을 입력해 주세요.').max(5000, '설명은 5000자 이하로 써 주세요.'),
-    kind: z.enum(['APP_FULL', 'FEATURE'], { message: '모집 종류를 골라 주세요.' }),
     capacity: z.number({ message: CAPACITY_MSG }).int(CAPACITY_MSG).min(1, CAPACITY_MSG).max(50, CAPACITY_MSG),
     startAt: z.string().min(1, '모집 마감일을 입력해 주세요.'),
     endAt: z.string().min(1, '테스트 종료일을 입력해 주세요.'),
     feedbackDueAt: z.string().min(1, '피드백 마감일을 입력해 주세요.'),
     /** 켜면 OS·모델과 관계없이 모든 기기를 받는다 (기기 조건 없이 저장) */
     anyDevice: z.boolean(),
-    devices: z.array(z.object({ os: z.enum(['ANDROID', 'IOS']), scope: z.enum(['ALL', 'MODEL']), deviceModelId: z.number().nullable() })),
+    devices: z.array(
+      z.object({ os: z.enum(['ANDROID', 'IOS']), scope: z.enum(['ALL', 'MODEL']), deviceModelId: z.number().nullable(), modelName: z.string().nullable() }),
+    ),
   })
   .superRefine((v, ctx) => {
     if (v.startAt && v.endAt && !(new Date(v.endAt).getTime() > new Date(v.startAt).getTime())) {
@@ -45,8 +60,10 @@ const schema = z
     if (v.anyDevice) return;
     if (v.devices.length === 0) {
       ctx.addIssue({ code: 'custom', path: ['devices'], message: DEVICE_MIN_MSG });
-    } else if (v.devices.some((d) => d.scope === 'MODEL' && d.deviceModelId === null)) {
-      ctx.addIssue({ code: 'custom', path: ['devices'], message: '모델 목록에서 골라 주세요.' });
+    } else if (v.devices.some((d) => d.scope === 'MODEL' && d.deviceModelId === null && d.modelName === null)) {
+      ctx.addIssue({ code: 'custom', path: ['devices'], message: '모델을 골라 주세요.' });
+    } else if (v.devices.some((d) => d.scope === 'MODEL' && d.deviceModelId === null && !d.modelName?.trim())) {
+      ctx.addIssue({ code: 'custom', path: ['devices'], message: '"기타"를 골랐다면 모델명을 입력해 주세요.' });
     } else {
       const issue = deviceIssues(v.devices)[0];
       if (issue) ctx.addIssue({ code: 'custom', path: ['devices'], message: issue });
@@ -74,6 +91,7 @@ export function RecruitmentForm({ recruitment }: Props) {
     control,
     setValue,
     handleSubmit,
+    getValues,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
     resolver: zodResolver(schema),
@@ -81,28 +99,57 @@ export function RecruitmentForm({ recruitment }: Props) {
       ? {
           title: recruitment.title,
           description: recruitment.description,
-          kind: recruitment.kind,
           capacity: recruitment.capacity,
           startAt: toLocalInput(recruitment.startAt),
           endAt: toLocalInput(recruitment.endAt),
           feedbackDueAt: toLocalInput(recruitment.feedbackDueAt),
           anyDevice: recruitment.devices.length === 0,
-          devices: recruitment.devices.map((d) => ({ os: d.os, scope: d.scope, deviceModelId: d.deviceModelId })),
+          devices: recruitment.devices.map((d) => ({
+            os: d.os,
+            scope: d.scope,
+            deviceModelId: d.deviceModelId,
+            modelName: d.scope === 'MODEL' && d.deviceModelId === null ? d.modelName : null,
+          })),
         }
-      : { title: '', description: '', kind: 'APP_FULL', capacity: 15, startAt: '', endAt: '', feedbackDueAt: '', anyDevice: false, devices: [{ os: 'ANDROID', scope: 'ALL', deviceModelId: null }] },
+      : {
+          title: '',
+          description: '',
+          capacity: 15,
+          startAt: '',
+          endAt: '',
+          feedbackDueAt: '',
+          anyDevice: false,
+          devices: [{ os: 'ANDROID', scope: 'ALL', deviceModelId: null, modelName: null }],
+        },
   });
+
+  // 기본 일정은 지금 시각 기준이라 서버 렌더와 어긋나지 않게 브라우저에서 채운다.
+  useEffect(() => {
+    if (recruitment) return;
+    const schedule = defaultSchedule();
+    (['startAt', 'endAt', 'feedbackDueAt'] as const).forEach((k) => {
+      if (!getValues(k)) setValue(k, schedule[k]);
+    });
+  }, [recruitment, getValues, setValue]);
 
   async function onSubmit(v: Values) {
     setServerError('');
     const body = {
       title: v.title,
       description: v.description,
-      kind: v.kind,
       capacity: v.capacity,
       startAt: fromLocalInput(v.startAt),
       endAt: fromLocalInput(v.endAt),
       feedbackDueAt: fromLocalInput(v.feedbackDueAt),
-      devices: v.anyDevice ? [] : v.devices.map((d) => ({ os: d.os, scope: d.scope, deviceModelId: d.scope === 'MODEL' ? d.deviceModelId : null })),
+      devices: v.anyDevice
+        ? []
+        : v.devices.map((d) =>
+            d.scope === 'ALL'
+              ? { os: d.os, scope: d.scope }
+              : d.deviceModelId !== null
+                ? { os: d.os, scope: d.scope, deviceModelId: d.deviceModelId }
+                : { os: d.os, scope: d.scope, modelName: d.modelName?.trim() },
+          ),
     };
     try {
       const saved = recruitment
@@ -118,7 +165,6 @@ export function RecruitmentForm({ recruitment }: Props) {
     }
   }
 
-  const kinds = Object.keys(KIND_LABEL) as RecruitmentKind[];
   // 참여자가 있으면 줄일 수 없다는 제약이라 늘 보이게 두고, 기본 범위 안내는 툴팁으로 둔다.
   const capacityHint = recruitment && recruitment.participants > 0 ? `현재 ${recruitment.participants}명이 참여 중이라 정원은 ${recruitment.participants}명보다 줄일 수 없어요.` : undefined;
 
@@ -134,37 +180,19 @@ export function RecruitmentForm({ recruitment }: Props) {
         <Textarea id="description" rows={6} aria-invalid={!!errors.description} aria-describedby={describedBy('description', errors.description?.message)} {...register('description')} />
       </Field>
 
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-semibold text-ink">종류</legend>
-        <div className="flex flex-wrap gap-3">
-          {kinds.map((k) => (
-            <label key={k} className="flex h-10 cursor-pointer items-center gap-2 rounded-control border border-line-strong bg-surface px-4 text-sm has-[:checked]:border-brand has-[:checked]:bg-brand-tint has-[:checked]:text-brand-ink">
-              <input type="radio" value={k} className="accent-brand" {...register('kind')} />
-              {KIND_LABEL[k]}
-            </label>
-          ))}
-        </div>
-        {errors.kind && (
-          <p role="alert" className="text-xs font-medium text-danger">
-            {errors.kind.message}
-          </p>
-        )}
-      </fieldset>
-
-      <Field id="capacity" label="정원 (명)" info="1명 이상 50명 이하로 정해요." hint={capacityHint} error={errors.capacity?.message} className="max-w-xs">
-        <Input
-          id="capacity"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={50}
-          aria-invalid={!!errors.capacity}
-          aria-describedby={describedBy('capacity', errors.capacity?.message, capacityHint)}
-          {...register('capacity', { valueAsNumber: true })}
-        />
-      </Field>
-
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-x-4 gap-y-6 sm:grid-cols-2">
+        <Field id="capacity" label="정원 (명)" info="1명 이상 50명 이하로 정해요." hint={capacityHint} error={errors.capacity?.message}>
+          <Input
+            id="capacity"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={50}
+            aria-invalid={!!errors.capacity}
+            aria-describedby={describedBy('capacity', errors.capacity?.message, capacityHint)}
+            {...register('capacity', { valueAsNumber: true })}
+          />
+        </Field>
         <Field id="startAt" label="모집 마감일" info="이날 테스트가 시작돼요. 정원이 다 차면 바로 시작해요." error={errors.startAt?.message}>
           <Input id="startAt" type="datetime-local" aria-invalid={!!errors.startAt} aria-describedby={describedBy('startAt', errors.startAt?.message)} {...register('startAt')} />
         </Field>
@@ -214,7 +242,7 @@ export function RecruitmentForm({ recruitment }: Props) {
         )}
       />
 
-      <div className="flex flex-wrap justify-end gap-2 border-t border-line pt-5">
+      <div className="flex flex-wrap justify-end gap-2 pt-2">
         <LinkButton href={recruitment ? `/admin/recruitments/${recruitment.id}` : '/admin'} variant="secondary">
           취소
         </LinkButton>
