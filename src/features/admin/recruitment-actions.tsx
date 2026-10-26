@@ -13,6 +13,8 @@ interface Props {
   title: string;
   isClosed: boolean;
   deleted: boolean;
+  /** 테스트 시작 전(모집 중·모집 마감)에만 마감 버튼을 보인다 */
+  canClose: boolean;
 }
 
 /** 버튼을 누르는 동안 막고, 끝나면 알림을 띄운 뒤 화면을 새로 읽는다. */
@@ -66,8 +68,8 @@ function RestoreButton({ id, title }: { id: number; title: string }) {
   );
 }
 
-/** 모집글 상세 위쪽의 관리 버튼: 수정 · 마감/마감 해제 · 삭제. 삭제된 글은 복구만 할 수 있다. */
-export function RecruitmentActions({ id, title, isClosed, deleted }: Props) {
+/** 모집글 상세 위쪽의 관리 버튼: 수정 · 마감/마감 해제 · 삭제. 마감은 테스트 시작 전에만 보이고, 삭제된 글은 복구만 할 수 있다. */
+export function RecruitmentActions({ id, title, isClosed, deleted, canClose }: Props) {
   const { busy, run } = useRun();
   const [confirming, setConfirming] = useState(false);
 
@@ -78,20 +80,22 @@ export function RecruitmentActions({ id, title, isClosed, deleted }: Props) {
       <Link href={`/admin/recruitments/${id}/edit`} className={buttonClass('secondary', 'sm')} aria-label={`${title} 수정하기`}>
         수정
       </Link>
-      <Button
-        variant="secondary"
-        size="sm"
-        disabled={busy}
-        aria-label={`${title} ${isClosed ? '마감 해제하기' : '마감하기'}`}
-        onClick={() =>
-          run(
-            () => api(`/admin/recruitments/${id}/${isClosed ? 'reopen' : 'close'}`, { method: 'PATCH' }),
-            isClosed ? '마감을 해제했어요.' : '마감했어요.',
-          )
-        }
-      >
-        {isClosed ? '마감 해제' : '마감'}
-      </Button>
+      {canClose && (
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={busy}
+          aria-label={`${title} ${isClosed ? '마감 해제하기' : '마감하기'}`}
+          onClick={() =>
+            run(
+              () => api(`/admin/recruitments/${id}/${isClosed ? 'reopen' : 'close'}`, { method: 'PATCH' }),
+              isClosed ? '마감을 해제했어요.' : '마감했어요.',
+            )
+          }
+        >
+          {isClosed ? '마감 해제' : '마감'}
+        </Button>
+      )}
       <Button variant="secondary" size="sm" className="text-danger hover:bg-bug-tint" disabled={busy} aria-label={`${title} 삭제하기`} onClick={() => setConfirming(true)}>
         삭제
       </Button>

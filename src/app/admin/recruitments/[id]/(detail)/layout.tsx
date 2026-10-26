@@ -69,7 +69,7 @@ export default async function RecruitmentDetailLayout(props: { params: Promise<{
               {r.title}
             </h1>
           </div>
-          <RecruitmentActions id={r.id} title={r.title} isClosed={r.isClosed} deleted={deleted} />
+          <RecruitmentActions id={r.id} title={r.title} isClosed={r.isClosed} deleted={deleted} canClose={r.stage === 'RECRUITING' || r.stage === 'RECRUIT_CLOSED'} />
         </div>
         {r.description && <ClampedText className="text-sm leading-relaxed text-ink-soft">{r.description}</ClampedText>}
         {/* 일정 한 줄, 참여·피드백 한 줄. 두 줄이 같은 열에 맞춰 선다. */}
@@ -83,7 +83,7 @@ export default async function RecruitmentDetailLayout(props: { params: Promise<{
                 value: (
                   <>
                     {r.participants} / {r.capacity}
-                    {r.cancelledCount > 0 && <span className="font-normal text-muted"> (취소: {r.cancelledCount})</span>}
+                    {r.cancelledCount > 0 && <span className="text-sm font-normal text-muted"> (취소: {r.cancelledCount})</span>}
                   </>
                 ),
               },
