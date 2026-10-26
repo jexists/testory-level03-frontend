@@ -3,12 +3,12 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ChevronLeft } from 'lucide-react';
 import { Chip } from '@/components/ui/badge';
-import { EmptyState } from '@/components/ui/state-view';
+import { EmptyState, Notice } from '@/components/ui/state-view';
 import { ApplyPanel } from '@/features/applications/apply-panel';
 import { FeedbackForm } from '@/features/feedbacks/feedback-form';
 import { FeedbackItem } from '@/features/feedbacks/feedback-item';
 import { ApiError } from '@/lib/api';
-import { formatDateTime } from '@/lib/format';
+import { dDay, formatDateTime } from '@/lib/format';
 import { KIND_LABEL } from '@/lib/labels';
 import { getCurrentUser, serverApi } from '@/lib/server-api';
 import type { MyFeedback, Recruitment } from '@/lib/types';
@@ -53,7 +53,8 @@ export default async function RecruitmentDetailPage({ params }: { params: Params
           <header className="space-y-3">
             <h1 className="text-2xl sm:text-3xl">{r.title}</h1>
             <p className="text-sm text-muted">
-              {KIND_LABEL[r.kind]} 테스트 <span aria-hidden>·</span> 시작 {formatDateTime(r.startAt)} <span aria-hidden>·</span> 종료 {formatDateTime(r.endAt)}
+              {KIND_LABEL[r.kind]} 테스트 <span aria-hidden>·</span> 모집 마감(테스트 시작) {formatDateTime(r.startAt)} <span aria-hidden>·</span> 종료{' '}
+              {formatDateTime(r.endAt)} <span aria-hidden>·</span> 피드백 마감 {formatDateTime(r.feedbackDueAt)}
             </p>
           </header>
 
@@ -98,9 +99,19 @@ export default async function RecruitmentDetailPage({ params }: { params: Params
               <p className="text-sm text-muted">관리자는 피드백을 쓰지 않아요. 피드백은 관리자 메뉴에서 모아 볼 수 있어요.</p>
             ) : participating ? (
               <div className="space-y-5">
-                <div className="panel p-5">
-                  <FeedbackForm recruitmentId={r.id} />
-                </div>
+                {/* 피드백은 테스트 중일 때만 쓸 수 있다. (서버도 같은 규칙으로 막는다) */}
+                {r.stage === 'TESTING' ? (
+                  <div className="panel space-y-4 p-5">
+                    <p className="text-sm text-muted">
+                      피드백 마감 <span className="font-semibold text-ink">{formatDateTime(r.feedbackDueAt)}</span> ({dDay(r.feedbackDueAt)})
+                    </p>
+                    <FeedbackForm recruitmentId={r.id} />
+                  </div>
+                ) : r.stage === 'FEEDBACK_CLOSED' ? (
+                  <Notice>피드백 마감일이 지났어요. 남겨 주신 피드백은 담당자가 정리하고 있어요.</Notice>
+                ) : (
+                  <Notice>테스트가 시작되면 피드백을 쓸 수 있어요. 정원이 다 차거나 {formatDateTime(r.startAt)}이 되면 시작해요.</Notice>
+                )}
                 <div className="space-y-2">
                   <h3 className="text-base">내가 쓴 피드백</h3>
                   <div className="panel overflow-hidden">

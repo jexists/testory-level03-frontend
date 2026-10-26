@@ -1,22 +1,27 @@
 import clsx from 'clsx';
-import type { ClosedReason, FeedbackType, RecruitmentStatus } from '@/lib/types';
-import { CLOSED_REASON_LABEL, FEEDBACK_TYPE_LABEL } from '@/lib/labels';
+import type { FeedbackType, PublicStage, Stage } from '@/lib/types';
+import { FEEDBACK_TYPE_LABEL, STAGE_LABEL } from '@/lib/labels';
 
 const chip = 'inline-flex items-center gap-1.5 rounded-chip px-2 py-0.5 text-xs font-semibold leading-5';
 
-export function StatusBadge({ status, reason }: { status: RecruitmentStatus; reason?: ClosedReason }) {
-  if (status === 'OPEN') {
-    return (
-      <span className={clsx(chip, 'bg-brand-tint text-brand-ink')}>
-        <span className="size-1.5 rounded-full bg-brand" aria-hidden />
-        모집 중
-      </span>
-    );
-  }
+/** 할 일이 있는 단계(피드백 완료·분석 완료)는 눈에 띄게, 끝난 단계는 흐리게 */
+const stageStyle: Record<Stage | PublicStage, { chip: string; dot: string }> = {
+  RECRUITING: { chip: 'bg-brand-tint text-brand-ink', dot: 'bg-brand' },
+  RECRUIT_CLOSED: { chip: 'bg-sunken text-ink-soft', dot: 'bg-muted' },
+  TESTING: { chip: 'bg-improve-tint text-improve', dot: 'bg-improve' },
+  FEEDBACK_DONE: { chip: 'bg-bug-tint text-bug', dot: 'bg-bug' },
+  ANALYZED: { chip: 'bg-praise-tint text-praise', dot: 'bg-praise' },
+  DONE: { chip: 'bg-sunken text-ink-soft', dot: 'bg-muted' },
+  FEEDBACK_CLOSED: { chip: 'bg-sunken text-ink-soft', dot: 'bg-muted' },
+};
+
+/** 진행 단계 배지. 관리자는 6단계, 테스터는 4단계를 받는다. */
+export function StageBadge({ stage }: { stage: Stage | PublicStage }) {
+  const st = stageStyle[stage];
   return (
-    <span className={clsx(chip, 'bg-sunken text-ink-soft')}>
-      <span className="size-1.5 rounded-full bg-muted" aria-hidden />
-      {reason ? CLOSED_REASON_LABEL[reason] : '마감'}
+    <span className={clsx(chip, 'whitespace-nowrap', st.chip)}>
+      <span className={clsx('size-1.5 rounded-full', st.dot)} aria-hidden />
+      {STAGE_LABEL[stage]}
     </span>
   );
 }

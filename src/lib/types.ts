@@ -9,6 +9,10 @@ export type ApplicationStatus = 'APPLIED' | 'CANCELLED';
 export type RecruitmentStatus = 'OPEN' | 'CLOSED';
 export type ClosedReason = 'MANUAL' | 'FULL' | 'STARTED' | null;
 export type Phase = 'UPCOMING' | 'ONGOING' | 'ENDED';
+/** 관리자가 보는 진행 단계 */
+export type Stage = 'RECRUITING' | 'RECRUIT_CLOSED' | 'TESTING' | 'FEEDBACK_DONE' | 'ANALYZED' | 'DONE';
+/** 테스터가 보는 진행 단계 (피드백 마감 뒤는 하나로 묶인다) */
+export type PublicStage = 'RECRUITING' | 'RECRUIT_CLOSED' | 'TESTING' | 'FEEDBACK_CLOSED';
 
 export interface DeviceModel {
   id: number;
@@ -46,16 +50,23 @@ export interface Recruitment {
   capacity: number;
   startAt: string;
   endAt: string;
+  feedbackDueAt: string;
+  /** 정원이 차서 테스트가 일찍 시작된 시각 */
+  testStartedAt: string | null;
   isClosed: boolean;
   participants: number;
   status: RecruitmentStatus;
   closedReason: ClosedReason;
   phase: Phase;
+  /** 테스터 API 는 PublicStage, 관리자 API 는 Stage */
+  stage: Stage | PublicStage;
   remaining: number;
   devices: DeviceCondition[];
   createdAt: string;
   updatedAt: string;
   feedbackCount?: number;
+  latestAnalysisAt?: string | null;
+  analysisReviewedAt?: string | null;
   deletedAt?: string | null;
   createdIp?: string | null;
   updatedIp?: string | null;
@@ -79,7 +90,7 @@ export interface MyApplication {
   appliedAt: string;
   cancelledAt: string | null;
   canCancel: boolean;
-  recruitment: { id: number; title: string; startAt: string; endAt: string };
+  recruitment: { id: number; title: string; startAt: string; endAt: string; feedbackDueAt: string; stage: PublicStage };
 }
 
 export interface Applicant {
@@ -134,18 +145,25 @@ export interface AnalysisDetail extends AnalysisSummary {
   result: AnalysisResult;
 }
 
-export interface Dashboard {
+export interface DashboardRecruitment {
+  id: number;
+  title: string;
+  stage: Stage;
   participants: number;
-  feedbacks: number;
-  bugs: number;
-  recruitments: {
-    id: number;
-    title: string;
-    participants: number;
-    feedbackCount: number;
-    capacity: number;
-    status: RecruitmentStatus;
-  }[];
+  capacity: number;
+  feedbackCount: number;
+  bugCount: number;
+  startAt: string;
+  endAt: string;
+  feedbackDueAt: string;
+  testStartedAt: string | null;
+  latestAnalysisVersion: number | null;
+}
+
+export interface Dashboard {
+  counts: { recruiting: number; closingSoon: number; filledEarly: number };
+  stageCounts: Record<Stage, number>;
+  recruitments: DashboardRecruitment[];
 }
 
 export interface DemoCounts {

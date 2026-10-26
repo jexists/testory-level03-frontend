@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Chip, StatusBadge } from '@/components/ui/badge';
+import { Chip, StageBadge } from '@/components/ui/badge';
 import { Button, LinkButton } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Notice } from '@/components/ui/state-view';
@@ -23,11 +23,12 @@ function deviceAllowed(r: Recruitment, user: User): boolean {
   );
 }
 
-const CLOSED_TEXT: Record<string, string> = {
-  FULL: '정원이 모두 차서 마감됐어요. 누군가 취소하면 다시 열려요.',
-  MANUAL: '담당자가 모집을 마감했어요.',
-  STARTED: '테스트가 이미 시작되어 신청할 수 없어요.',
-};
+/** 신청을 받지 않는 이유 */
+function closedText(r: Recruitment): string {
+  if (r.stage === 'RECRUIT_CLOSED') return '담당자가 모집을 마감했어요.';
+  if (r.stage === 'FEEDBACK_CLOSED') return '테스트와 피드백 기간이 끝났어요.';
+  return r.testStartedAt ? '정원이 차서 테스트가 시작됐어요.' : '테스트가 이미 시작되어 신청할 수 없어요.';
+}
 
 export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment; user: User | null }) {
   const router = useRouter();
@@ -76,7 +77,7 @@ export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment;
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base">자리 현황</h2>
-          <StatusBadge status={r.status} reason={r.closedReason} />
+          <StageBadge stage={r.stage} />
         </div>
         <SeatStrip capacity={r.capacity} filled={r.participants} closed={r.status === 'CLOSED'} size="lg" />
         <p className="text-sm text-muted">
@@ -135,10 +136,10 @@ export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment;
               <Button className="w-full" onClick={apply} loading={busy} disabled={!allowed}>
                 신청하기
               </Button>
-              <p className="text-xs text-muted">테스트 시작 전까지 취소하고 다시 신청할 수 있어요.</p>
+              <p className="text-xs text-muted">테스트 시작 전까지 취소하고 다시 신청할 수 있어요. 정원이 다 차면 테스트가 바로 시작돼요.</p>
             </div>
           ) : (
-            <p className="text-sm text-muted">{CLOSED_TEXT[r.closedReason ?? 'MANUAL']}</p>
+            <p className="text-sm text-muted">{closedText(r)}</p>
           )}
         </div>
       )}
@@ -146,7 +147,7 @@ export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment;
       <ConfirmDialog
         open={confirmOpen}
         title="신청을 취소할까요?"
-        description="테스트가 시작되기 전에는 다시 신청할 수 있어요. 자리가 모두 찼다면 다시 신청하지 못할 수 있어요."
+        description="테스트가 시작되기 전에는 다시 신청할 수 있어요. 그사이 정원이 다 차면 테스트가 시작되어 다시 신청하지 못해요."
         confirmLabel="신청 취소하기"
         cancelLabel="계속 참여하기"
         danger

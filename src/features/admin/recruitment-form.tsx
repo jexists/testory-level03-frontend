@@ -17,6 +17,10 @@ import { DeviceConditionsEditor, deviceIssues, type DeviceRow } from './device-c
 
 const CAPACITY_MSG = '정원은 1명 이상 50명 이하로 정해 주세요.';
 const DEVICE_MIN_MSG = '기기 조건을 하나 이상 선택해 주세요.';
+const DAY = 86_400_000;
+/** 피드백 마감일 기본값: 테스트 종료일 + 3일 */
+const FEEDBACK_GRACE_DAYS = 3;
+const plusGrace = (local: string) => toLocalInput(new Date(new Date(local).getTime() + FEEDBACK_GRACE_DAYS * DAY).toISOString());
 
 const schema = z
   .object({
@@ -24,15 +28,19 @@ const schema = z
     description: z.string().trim().min(1, '설명을 입력해 주세요.').max(5000, '설명은 5000자 이하로 써 주세요.'),
     kind: z.enum(['APP_FULL', 'FEATURE'], { message: '모집 종류를 골라 주세요.' }),
     capacity: z.number({ message: CAPACITY_MSG }).int(CAPACITY_MSG).min(1, CAPACITY_MSG).max(50, CAPACITY_MSG),
-    startAt: z.string().min(1, '시작일을 입력해 주세요.'),
-    endAt: z.string().min(1, '종료일을 입력해 주세요.'),
+    startAt: z.string().min(1, '모집 마감일을 입력해 주세요.'),
+    endAt: z.string().min(1, '테스트 종료일을 입력해 주세요.'),
+    feedbackDueAt: z.string().min(1, '피드백 마감일을 입력해 주세요.'),
     /** 켜면 OS·모델과 관계없이 모든 기기를 받는다 (기기 조건 없이 저장) */
     anyDevice: z.boolean(),
     devices: z.array(z.object({ os: z.enum(['ANDROID', 'IOS']), scope: z.enum(['ALL', 'MODEL']), deviceModelId: z.number().nullable() })),
   })
   .superRefine((v, ctx) => {
     if (v.startAt && v.endAt && !(new Date(v.endAt).getTime() > new Date(v.startAt).getTime())) {
-      ctx.addIssue({ code: 'custom', path: ['endAt'], message: '종료일은 시작일보다 늦어야 해요.' });
+      ctx.addIssue({ code: 'custom', path: ['endAt'], message: '테스트 종료일은 모집 마감일보다 늦어야 해요.' });
+    }
+    if (v.endAt && v.feedbackDueAt && new Date(v.feedbackDueAt).getTime() < new Date(v.endAt).getTime()) {
+      ctx.addIssue({ code: 'custom', path: ['feedbackDueAt'], message: '피드백 마감일은 종료일보다 늦어야 해요.' });
     }
     if (v.anyDevice) return;
     if (v.devices.length === 0) {
@@ -56,10 +64,15 @@ export function RecruitmentForm({ recruitment }: Props) {
   const { toast } = useToast();
   const [serverError, setServerError] = useState('');
   const editing = !!recruitment;
+  // 관리자가 피드백 마감일을 직접 고치기 전까지는 종료일 + 3일로 따라 바꾼다.
+  const [autoDue, setAutoDue] = useState(
+    !recruitment || new Date(recruitment.feedbackDueAt).getTime() - new Date(recruitment.endAt).getTime() === FEEDBACK_GRACE_DAYS * DAY,
+  );
 
   const {
     register,
     control,
+    setValue,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<Values>({
@@ -72,10 +85,11 @@ export function RecruitmentForm({ recruitment }: Props) {
           capacity: recruitment.capacity,
           startAt: toLocalInput(recruitment.startAt),
           endAt: toLocalInput(recruitment.endAt),
+          feedbackDueAt: toLocalInput(recruitment.feedbackDueAt),
           anyDevice: recruitment.devices.length === 0,
           devices: recruitment.devices.map((d) => ({ os: d.os, scope: d.scope, deviceModelId: d.deviceModelId })),
         }
-      : { title: '', description: '', kind: 'APP_FULL', capacity: 15, startAt: '', endAt: '', anyDevice: false, devices: [{ os: 'ANDROID', scope: 'ALL', deviceModelId: null }] },
+      : { title: '', description: '', kind: 'APP_FULL', capacity: 15, startAt: '', endAt: '', feedbackDueAt: '', anyDevice: false, devices: [{ os: 'ANDROID', scope: 'ALL', deviceModelId: null }] },
   });
 
   async function onSubmit(v: Values) {
@@ -87,6 +101,7 @@ export function RecruitmentForm({ recruitment }: Props) {
       capacity: v.capacity,
       startAt: fromLocalInput(v.startAt),
       endAt: fromLocalInput(v.endAt),
+      feedbackDueAt: fromLocalInput(v.feedbackDueAt),
       devices: v.anyDevice ? [] : v.devices.map((d) => ({ os: d.os, scope: d.scope, deviceModelId: d.scope === 'MODEL' ? d.deviceModelId : null })),
     };
     try {
@@ -147,12 +162,33 @@ export function RecruitmentForm({ recruitment }: Props) {
         />
       </Field>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field id="startAt" label="시작일" hint="이 시각 전까지만 테스터가 신청·취소할 수 있어요." error={errors.startAt?.message}>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Field id="startAt" label="모집 마감일" hint="이날 테스트가 시작돼요. 정원이 다 차면 바로 시작해요." error={errors.startAt?.message}>
           <Input id="startAt" type="datetime-local" aria-invalid={!!errors.startAt} aria-describedby={describedBy('startAt', errors.startAt?.message, true)} {...register('startAt')} />
         </Field>
-        <Field id="endAt" label="종료일" error={errors.endAt?.message}>
-          <Input id="endAt" type="datetime-local" aria-invalid={!!errors.endAt} aria-describedby={describedBy('endAt', errors.endAt?.message)} {...register('endAt')} />
+        <Field id="endAt" label="테스트 종료일" error={errors.endAt?.message}>
+          <Input
+            id="endAt"
+            type="datetime-local"
+            aria-invalid={!!errors.endAt}
+            aria-describedby={describedBy('endAt', errors.endAt?.message)}
+            {...register('endAt', {
+              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+                if (autoDue && e.target.value) setValue('feedbackDueAt', plusGrace(e.target.value));
+              },
+            })}
+          />
+        </Field>
+        <Field id="feedbackDueAt" label="피드백 마감일" hint="기본은 종료일 3일 뒤예요. 이 시각까지 피드백을 받아요." error={errors.feedbackDueAt?.message}>
+          <Input
+            id="feedbackDueAt"
+            type="datetime-local"
+            aria-invalid={!!errors.feedbackDueAt}
+            aria-describedby={describedBy('feedbackDueAt', errors.feedbackDueAt?.message, true)}
+            {...register('feedbackDueAt', {
+              onChange: () => setAutoDue(false),
+            })}
+          />
         </Field>
       </div>
 

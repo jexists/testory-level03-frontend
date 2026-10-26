@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Chip, StatusBadge } from '@/components/ui/badge';
+import { Chip, StageBadge } from '@/components/ui/badge';
 import { LinkButton } from '@/components/ui/button';
 import { EmptyState, ErrorState } from '@/components/ui/state-view';
 import { SeatStrip } from '@/components/ui/seat-strip';
@@ -64,7 +64,7 @@ export default async function ApplicantsPage(props: { params: Promise<{ id: stri
         <div className="min-w-0 flex-1 space-y-1.5">
           <p className="font-semibold">{recruitment.title}</p>
           <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge status={recruitment.status} reason={recruitment.closedReason} />
+            <StageBadge stage={recruitment.stage} />
             {deleted && <Chip>삭제됨</Chip>}
           </div>
         </div>

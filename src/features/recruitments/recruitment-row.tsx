@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Chip, StatusBadge } from '@/components/ui/badge';
+import { Chip, StageBadge } from '@/components/ui/badge';
 import { SeatStrip } from '@/components/ui/seat-strip';
 import { formatPeriod } from '@/lib/format';
 import { KIND_LABEL } from '@/lib/labels';
@@ -17,7 +17,7 @@ export function RecruitmentRow({ r }: { r: Recruitment }) {
               {r.title}
             </Link>
           </h2>
-          <StatusBadge status={r.status} reason={r.closedReason} />
+          <StageBadge stage={r.stage} />
         </div>
         <p className="text-sm text-muted">
           {KIND_LABEL[r.kind]} 테스트 <span aria-hidden>·</span> {formatPeriod(r.startAt, r.endAt)}

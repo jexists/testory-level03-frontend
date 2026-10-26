@@ -3,13 +3,13 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Chip } from '@/components/ui/badge';
+import { Chip, StageBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { Notice } from '@/components/ui/state-view';
 import { useToast } from '@/components/ui/toast';
 import { api, errorMessage } from '@/lib/api';
-import { formatDateTime, formatPeriod } from '@/lib/format';
+import { formatDate, formatDateTime, formatPeriod } from '@/lib/format';
 import { osText } from '@/lib/labels';
 import type { MyApplication } from '@/lib/types';
 
@@ -55,9 +55,11 @@ export function MyApplications({ items }: { items: MyApplication[] }) {
                   </Link>
                 </h2>
                 {a.status === 'APPLIED' ? <Chip tone="brand">참여 중</Chip> : <Chip>취소</Chip>}
+                {a.status === 'APPLIED' && <StageBadge stage={a.recruitment.stage} />}
               </div>
               <p className="text-sm text-muted">
-                테스트 기간 {formatPeriod(a.recruitment.startAt, a.recruitment.endAt)} <span aria-hidden>·</span> 신청 {formatDateTime(a.appliedAt)}
+                테스트 기간 {formatPeriod(a.recruitment.startAt, a.recruitment.endAt)} <span aria-hidden>·</span> 피드백 마감{' '}
+                {formatDate(a.recruitment.feedbackDueAt)} <span aria-hidden>·</span> 신청 {formatDateTime(a.appliedAt)}
                 {a.cancelledAt && <> · 취소 {formatDateTime(a.cancelledAt)}</>}
               </p>
               <p className="flex flex-wrap items-center gap-2 text-sm">

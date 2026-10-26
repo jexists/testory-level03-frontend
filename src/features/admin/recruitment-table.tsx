@@ -1,8 +1,8 @@
 import Link from 'next/link';
-import { Chip, StatusBadge } from '@/components/ui/badge';
+import { Chip, StageBadge } from '@/components/ui/badge';
 import { SeatStrip } from '@/components/ui/seat-strip';
 import { KIND_LABEL } from '@/lib/labels';
-import { formatDateYear, formatPeriod } from '@/lib/format';
+import { formatDate, formatDateYear, formatPeriod } from '@/lib/format';
 import type { Recruitment } from '@/lib/types';
 import { RecruitmentRowActions } from './recruitment-row-actions';
 
@@ -41,11 +41,13 @@ export function RecruitmentTable({ items }: { items: Recruitment[] }) {
                 >
                   {r.title}
                 </Link>
-                <StatusBadge status={r.status} reason={r.closedReason} />
+                <StageBadge stage={r.stage} />
                 <Chip>{KIND_LABEL[r.kind]}</Chip>
                 {deleted && <Chip>삭제됨 · {formatDateYear(r.deletedAt as string)}</Chip>}
               </div>
-              <p className="text-sm text-muted">{formatPeriod(r.startAt, r.endAt)}</p>
+              <p className="text-sm text-muted">
+                테스트 {formatPeriod(r.startAt, r.endAt)} <span aria-hidden>·</span> 피드백 마감 {formatDate(r.feedbackDueAt)}
+              </p>
               <IpDetails r={r} />
             </div>
             <div className="space-y-1.5">
