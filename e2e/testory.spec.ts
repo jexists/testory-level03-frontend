@@ -59,8 +59,8 @@ test('테스터는 신청하고 취소하고 다시 신청한다', async ({ page
   await expect(page.getByText('이 모집에 참여 중이에요.')).toBeVisible();
 
   await page.goto('/me/applications');
-  // 취소한 기록과 다시 신청한 기록이 둘 다 남는다
-  await expect(page.getByRole('heading', { name: '반복 일정 기능 테스트' })).toHaveCount(2);
+  // 다시 신청했으면 예전 취소 기록은 목록에 보이지 않는다
+  await expect(page.getByRole('heading', { name: '반복 일정 기능 테스트' })).toHaveCount(1);
   await expect(page.getByText('신청 당시 기기').first()).toBeVisible();
 });
 

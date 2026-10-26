@@ -7,10 +7,9 @@ import { usePathname } from 'next/navigation';
 const TABS = [
   { href: '/me', label: '내 정보' },
   { href: '/me/applications', label: '내 신청' },
-  { href: '/me/feedbacks', label: '내 피드백' },
 ];
 
-/** 마이페이지 안에서 내 정보·내 신청·내 피드백을 오가는 탭. 관리자는 내 정보만 있다. */
+/** 마이페이지 안에서 내 정보·내 신청을 오가는 탭 (내 피드백은 내 신청 각 줄에 함께 보인다). 관리자는 내 정보만 있다. */
 export function MeTabs({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
   if (isAdmin) return null;
