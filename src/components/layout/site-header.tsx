@@ -22,17 +22,14 @@ export function SiteHeader({ user }: { user: User | null }) {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/85">
       <div className="container-page flex h-14 items-center justify-between gap-4">
-        <div className="flex items-center gap-8">
+        <div className="flex flex-1 items-center gap-8">
           <Logo />
           <HeaderNav user={user} />
         </div>
         {!user && (
           <div className="hidden items-center gap-2 md:flex">
-            <LinkButton href="/login" variant="ghost" size="sm">
+            <LinkButton href="/login" variant="secondary" size="sm" className="border-transparent bg-brand-tint text-brand-ink hover:bg-brand/15">
               로그인
-            </LinkButton>
-            <LinkButton href="/signup" size="sm">
-              회원가입
             </LinkButton>
           </div>
         )}
