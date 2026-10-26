@@ -1,16 +1,15 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { Chip, StageBadge } from '@/components/ui/badge';
+import { StageBadge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { ListRow } from '@/components/ui/list-row';
 import { Notice } from '@/components/ui/state-view';
 import { useToast } from '@/components/ui/toast';
 import { api, errorMessage } from '@/lib/api';
-import { formatDate, formatDateTime, formatPeriod } from '@/lib/format';
-import { osText } from '@/lib/labels';
+import { formatDate, formatPeriod } from '@/lib/format';
 import type { MyApplication } from '@/lib/types';
 
 export function MyApplications({ items }: { items: MyApplication[] }) {
@@ -46,37 +45,48 @@ export function MyApplications({ items }: { items: MyApplication[] }) {
       )}
       <ul className="divide-y divide-line">
         {items.map((a) => (
-          <li key={a.id} className="grid gap-3 px-5 py-5 sm:grid-cols-[1fr_auto] sm:items-center">
-            <div className="min-w-0 space-y-1.5">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <h2 className="text-base">
-                  <Link href={`/recruitments/${a.recruitment.id}`} className="hover:text-brand-ink hover:underline">
-                    {a.recruitment.title}
-                  </Link>
-                </h2>
-                {a.status === 'APPLIED' ? <Chip tone="brand">참여 중</Chip> : <Chip>취소</Chip>}
-                {a.status === 'APPLIED' && <StageBadge stage={a.recruitment.stage} />}
-              </div>
-              <p className="text-sm text-muted">
-                테스트 기간 {formatPeriod(a.recruitment.startAt, a.recruitment.endAt)} <span aria-hidden>·</span> 피드백 마감{' '}
-                {formatDate(a.recruitment.feedbackDueAt)} <span aria-hidden>·</span> 신청 {formatDateTime(a.appliedAt)}
-                {a.cancelledAt && <> · 취소 {formatDateTime(a.cancelledAt)}</>}
-              </p>
-              <p className="flex flex-wrap items-center gap-2 text-sm">
-                <span className="text-muted">신청 당시 기기</span>
-                <Chip>{osText(a.deviceType)}</Chip>
-                <span className="text-sm">{a.deviceModel}</span>
-              </p>
-            </div>
-            {a.status === 'APPLIED' &&
-              (a.canCancel ? (
-                <Button variant="secondary" size="sm" onClick={() => setTarget(a)}>
-                  신청 취소
-                </Button>
+          <ListRow
+            key={a.id}
+            href={`/recruitments/${a.recruitment.id}`}
+            title={a.recruitment.title}
+            badge={
+              a.status === 'APPLIED' ? (
+                <StageBadge stage={a.recruitment.stage} dot={false} />
               ) : (
-                <span className="text-xs text-muted">테스트가 시작되어 취소할 수 없어요</span>
-              ))}
-          </li>
+                <span className="inline-flex rounded-chip bg-sunken px-2 py-0.5 text-xs font-semibold leading-5 text-muted">취소함</span>
+              )
+            }
+            meta={
+              <>
+                <span className="whitespace-nowrap">{formatPeriod(a.recruitment.startAt, a.recruitment.endAt)}</span>
+                <span className="hidden sm:inline" aria-hidden>
+                  ·
+                </span>
+                <span className="whitespace-nowrap">피드백 마감 {formatDate(a.recruitment.feedbackDueAt)}</span>
+              </>
+            }
+            // 좁은 화면에서는 제목이 눌리지 않게 취소 버튼을 날짜 아래에 둔다
+            footer={
+              a.status === 'APPLIED' &&
+              a.canCancel && (
+                <div className="sm:hidden">
+                  <Button variant="ghost" size="sm" className="-ml-3 text-danger! hover:bg-bug-tint" onClick={() => setTarget(a)}>
+                    신청 취소
+                  </Button>
+                </div>
+              )
+            }
+            trailing={
+              a.status === 'APPLIED' &&
+              a.canCancel && (
+                <div className="hidden shrink-0 sm:block">
+                  <Button variant="ghost" size="sm" className="text-danger! hover:bg-bug-tint" onClick={() => setTarget(a)}>
+                    신청 취소
+                  </Button>
+                </div>
+              )
+            }
+          />
         ))}
       </ul>
       <ConfirmDialog

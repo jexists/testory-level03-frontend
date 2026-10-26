@@ -15,12 +15,20 @@ const stageStyle: Record<Stage | PublicStage, { chip: string; dot: string }> = {
   FEEDBACK_CLOSED: { chip: 'bg-sunken text-ink-soft', dot: 'bg-muted' },
 };
 
-/** 진행 단계 배지. 관리자는 6단계, 테스터는 4단계를 받는다. */
-export function StageBadge({ stage }: { stage: Stage | PublicStage }) {
+/** 진행 단계 배지. 관리자는 6단계, 테스터는 4단계를 받는다. plain 이면 바탕 없이 점과 글자만 (목록용). */
+export function StageBadge({ stage, plain, dot = true }: { stage: Stage | PublicStage; plain?: boolean; dot?: boolean }) {
   const st = stageStyle[stage];
+  if (plain) {
+    return (
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-ink-soft">
+        <span className={clsx('size-1.5 rounded-full', st.dot)} aria-hidden />
+        {STAGE_LABEL[stage]}
+      </span>
+    );
+  }
   return (
     <span className={clsx(chip, 'whitespace-nowrap', st.chip)}>
-      <span className={clsx('size-1.5 rounded-full', st.dot)} aria-hidden />
+      {dot && <span className={clsx('size-1.5 rounded-full', st.dot)} aria-hidden />}
       {STAGE_LABEL[stage]}
     </span>
   );

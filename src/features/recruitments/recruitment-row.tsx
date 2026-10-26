@@ -1,50 +1,36 @@
-import Link from 'next/link';
-import { Chip, StageBadge } from '@/components/ui/badge';
-import { SeatStrip } from '@/components/ui/seat-strip';
+import { StageBadge } from '@/components/ui/badge';
+import { ListRow } from '@/components/ui/list-row';
 import { formatPeriod } from '@/lib/format';
-import { KIND_LABEL } from '@/lib/labels';
 import type { Recruitment } from '@/lib/types';
 
-/** 목록의 한 줄: 왼쪽은 무엇을·언제·어떤 기기로, 오른쪽은 자리 현황 */
+/** 목록의 한 줄: 왼쪽 단계, 가운데 제목·허용 기기와 기간, 오른쪽 남은 자리 */
 export function RecruitmentRow({ r }: { r: Recruitment }) {
-  const closed = r.status === 'CLOSED';
+  const open = r.status === 'OPEN' && r.remaining > 0;
+  const devices = r.devices.length === 0 ? '모든 기기' : r.devices.map((d) => d.label).join(', ');
   return (
-    <li className="relative grid grid-cols-[minmax(0,1fr)] gap-4 px-5 py-5 transition-colors hover:bg-canvas/70 md:grid-cols-[minmax(0,1fr)_15rem] md:items-center md:gap-8">
-      <div className="min-w-0 space-y-2.5">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <h2 className="text-lg">
-            <Link href={`/recruitments/${r.id}`} className="after:absolute after:inset-0 hover:text-brand-ink">
-              {r.title}
-            </Link>
-          </h2>
-          <StageBadge stage={r.stage} />
-        </div>
-        <p className="text-sm text-muted">
-          {KIND_LABEL[r.kind]} 테스트 <span aria-hidden>·</span> {formatPeriod(r.startAt, r.endAt)}
-        </p>
-        <ul className="flex flex-wrap gap-1.5" aria-label="허용 기기">
-          {r.devices.length === 0 ? (
-            <li>
-              <Chip>모든 기기</Chip>
-            </li>
-          ) : (
-            r.devices.map((d) => (
-              <li key={d.id}>
-                <Chip>{d.label}</Chip>
-              </li>
-            ))
-          )}
-        </ul>
-      </div>
-      <div className="space-y-2">
-        <SeatStrip capacity={r.capacity} filled={r.participants} closed={closed} />
-        <p className="text-sm">
-          <span className="font-mono text-base font-medium">
-            {r.participants}/{r.capacity}
+    <ListRow
+      stretched
+      href={`/recruitments/${r.id}`}
+      title={r.title}
+      badge={<StageBadge stage={r.stage} dot={false} />}
+      titleAside={
+        // 좁은 화면에서는 줄이 바뀌며 점만 남으므로 기기를 아래 줄로 내린다
+        <span className="hidden text-sm text-muted sm:inline">
+          <span className="mr-2" aria-hidden>
+            ·
           </span>
-          <span className="ml-2 text-muted">{r.remaining > 0 ? `남은 자리 ${r.remaining}` : '자리가 모두 찼어요'}</span>
-        </p>
-      </div>
-    </li>
+          <span className="sr-only">허용 기기 </span>
+          {devices}
+        </span>
+      }
+      meta={
+        <>
+          <span className="whitespace-nowrap">{formatPeriod(r.startAt, r.endAt)}</span>
+          <span className="sm:hidden">{devices}</span>
+          {open && <span className="font-medium text-brand-ink sm:hidden">남은 자리 {r.remaining}</span>}
+        </>
+      }
+      trailing={open && <p className="hidden shrink-0 text-sm font-medium text-brand-ink sm:block">남은 자리 {r.remaining}</p>}
+    />
   );
 }
