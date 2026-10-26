@@ -14,4 +14,4 @@ export function PageHeader({ title, description, actions }: { title: string; des
 
 /** 표 위쪽에 쓰는 공통 클래스 */
 export const th = 'whitespace-nowrap px-4 py-2.5 text-left text-xs font-semibold text-muted';
-export const td = 'px-4 py-3 align-top';
+export const td = 'px-4 py-3 align-middle';

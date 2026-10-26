@@ -3,7 +3,7 @@
 /*
  * Testory 디자인 토큰
  * - 바탕은 연한 청회색 "실험 노트" 톤, 강조색은 코발트 한 가지만 쓴다.
- * - 피드백 유형(버그/개선/칭찬)과 상태(성공/경고/오류)에만 의미색을 쓴다.
+ * - 피드백 유형(버그/개선/칭찬)과 상태(성공/경고/오류), 진행 단계 배지에만 의미색을 쓴다.
  * - 페이지에서는 이 토큰만 쓰고 임의의 색·크기를 새로 만들지 않는다.
  */
 @theme {
@@ -33,6 +33,12 @@
   --color-warn: #f0a81e;
   --color-danger: #b72f27;
   --color-danger-hover: #961f19;
+
+  /* 색상: 진행 단계 배지 전용 (모집 마감·피드백 완료) */
+  --color-stage-closed: #5b3aa6;
+  --color-stage-closed-tint: #efe9fa;
+  --color-stage-collected: #0f6873;
+  --color-stage-collected-tint: #dcf2f4;
 
   /* 글꼴 */
   --font-sans: 'IBM Plex Sans KR', 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;

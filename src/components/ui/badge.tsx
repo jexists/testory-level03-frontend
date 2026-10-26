@@ -2,14 +2,15 @@ import clsx from 'clsx';
 import type { FeedbackType, PublicStage, Stage } from '@/lib/types';
 import { FEEDBACK_TYPE_LABEL, STAGE_LABEL } from '@/lib/labels';
 
-const chip = 'inline-flex items-center gap-1.5 rounded-chip px-2 py-0.5 text-xs font-semibold leading-5';
+const chipShape = 'inline-flex items-center gap-1.5 rounded-chip px-2 py-0.5 text-xs leading-5';
+const chip = `${chipShape} font-semibold`;
 
-/** 할 일이 있는 단계(피드백 완료·분석 완료)는 눈에 띄게, 끝난 단계는 흐리게 */
+/** 단계마다 다른 채움 색. 빨강은 버그·위험 전용이라 쓰지 않고, 끝난 단계만 회색 */
 const stageStyle: Record<Stage | PublicStage, string> = {
   RECRUITING: 'bg-brand-tint text-brand-ink',
-  RECRUIT_CLOSED: 'bg-sunken text-ink-soft',
+  RECRUIT_CLOSED: 'bg-stage-closed-tint text-stage-closed',
   TESTING: 'bg-improve-tint text-improve',
-  FEEDBACK_DONE: 'bg-bug-tint text-bug',
+  FEEDBACK_DONE: 'bg-stage-collected-tint text-stage-collected',
   ANALYZED: 'bg-praise-tint text-praise',
   DONE: 'bg-sunken text-ink-soft',
   FEEDBACK_CLOSED: 'bg-sunken text-ink-soft',
@@ -22,17 +23,18 @@ export function StageBadge({ stage }: { stage: Stage | PublicStage }) {
 
 /** 삭제된 모집글 배지. 관리자 목록에서 진행 단계 배지 대신 쓴다. */
 export function DeletedBadge() {
-  return <span className={clsx(chip, 'whitespace-nowrap border border-line-strong bg-surface text-muted')}>삭제</span>;
+  return <span className={clsx(chip, 'whitespace-nowrap bg-line text-ink-soft')}>삭제</span>;
 }
 
+/** 피드백 유형은 목록에 줄마다 붙으니 단계 배지보다 옅게: 배경은 반투명, 글자는 한 단계 가늘게 */
 const typeStyle: Record<FeedbackType, string> = {
-  BUG: 'bg-bug-tint text-bug',
-  IMPROVEMENT: 'bg-improve-tint text-improve',
-  PRAISE: 'bg-praise-tint text-praise',
+  BUG: 'bg-bug-tint/60 text-bug',
+  IMPROVEMENT: 'bg-improve-tint/60 text-improve',
+  PRAISE: 'bg-praise-tint/60 text-praise',
 };
 
 export function FeedbackTypeBadge({ type }: { type: FeedbackType }) {
-  return <span className={clsx(chip, typeStyle[type])}>{FEEDBACK_TYPE_LABEL[type]}</span>;
+  return <span className={clsx(chipShape, 'font-medium', typeStyle[type])}>{FEEDBACK_TYPE_LABEL[type]}</span>;
 }
 
 /** 허용 기기 조건·기기 이름 같은 짧은 라벨 */

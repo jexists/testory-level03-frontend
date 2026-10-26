@@ -21,7 +21,7 @@ export function NavLink({ href, exact, variant, children }: NavLinkProps) {
       aria-current={active ? 'page' : undefined}
       className={clsx(
         'rounded-control px-3 text-sm font-medium transition-colors',
-        variant === 'side' ? 'block py-2' : 'whitespace-nowrap py-2',
+        variant === 'side' ? 'block py-2' : 'inline-block whitespace-nowrap py-2',
         active ? 'bg-brand-tint text-brand-ink' : 'text-ink-soft hover:bg-sunken',
       )}
     >

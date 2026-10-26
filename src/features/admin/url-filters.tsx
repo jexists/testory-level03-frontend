@@ -1,10 +1,10 @@
 'use client';
 
-import clsx from 'clsx';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/field';
+import { segmentGroup, segmentItem } from '@/components/ui/segmented';
 import { Select } from '@/components/ui/select';
 
 export interface Option {
@@ -35,7 +35,7 @@ export function SegmentedParam({ label, param, options, defaultValue = '' }: { l
   const nav = useParamNavigate();
   const current = nav.get(param) ?? defaultValue;
   return (
-    <div role="group" aria-label={label} className="inline-flex rounded-control border border-line-strong bg-surface p-0.5">
+    <div role="group" aria-label={label} className={segmentGroup}>
       {options.map((o) => {
         const on = o.value === current;
         return (
@@ -44,10 +44,7 @@ export function SegmentedParam({ label, param, options, defaultValue = '' }: { l
             type="button"
             aria-pressed={on}
             onClick={() => nav.set(param, o.value)}
-            className={clsx(
-              'h-8 whitespace-nowrap rounded-[6px] px-3 text-sm font-medium transition-colors',
-              on ? 'bg-brand text-white' : 'text-ink-soft hover:bg-sunken',
-            )}
+            className={segmentItem(on)}
           >
             {o.label}
           </button>

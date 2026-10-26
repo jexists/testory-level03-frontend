@@ -9,7 +9,7 @@ export function EmptyState({ title, description, action }: { title: string; desc
       <Inbox className="size-8 text-line-strong" aria-hidden />
       <div className="space-y-1">
         <p className="font-semibold text-ink">{title}</p>
-        {description && <p className="max-w-sm text-sm text-muted">{description}</p>}
+        {description && <p className="max-w-lg text-sm text-balance text-muted">{description}</p>}
       </div>
       {action}
     </div>
@@ -23,7 +23,7 @@ export function ErrorState({ title = '불러오지 못했어요', description, a
       <AlertCircle className="size-8 text-danger" aria-hidden />
       <div className="space-y-1">
         <p className="font-semibold text-ink">{title}</p>
-        {description && <p className="max-w-sm text-sm text-muted">{description}</p>}
+        {description && <p className="max-w-lg text-sm text-balance text-muted">{description}</p>}
       </div>
       {action}
     </div>
