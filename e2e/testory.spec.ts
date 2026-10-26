@@ -29,7 +29,7 @@ test('방문자는 목록을 보고 기기·상태 필터와 검색을 쓸 수 �
   await page.getByRole('link', { name: '마감', exact: true }).click();
   await expect(page.getByRole('link', { name: '하루칸 앱 전체 베타 테스트' })).toBeVisible();
 
-  await page.goto('/?q=알림');
+  await page.goto('/?status=ALL&q=알림');
   await expect(page.getByRole('link', { name: '알림 기능 테스트' })).toBeVisible();
 });
 
@@ -74,7 +74,7 @@ test('내 기기가 조건에 맞지 않으면 신청할 수 없다', async ({ p
 
 test('참여 중인 테스터는 테스트 중에 유형을 골라 피드백을 남긴다', async ({ page }) => {
   await login(page, 'tester01@testory.demo');
-  await page.goto('/');
+  await page.goto('/?status=ALL');
   // 정원이 차서 바로 시작된 테스트 (시연 데이터)
   await page.getByRole('link', { name: '하루칸 앱 전체 베타 테스트' }).click();
   await expect(page.getByText(/피드백 마감 .*D-/)).toBeVisible();
@@ -98,7 +98,7 @@ test('일반 사용자는 관리자 화면에 들어갈 수 없다', async ({ pa
 
 test('피드백 마감이 지난 테스트에는 피드백을 쓸 수 없다', async ({ page }) => {
   await login(page, 'tester01@testory.demo');
-  await page.goto('/');
+  await page.goto('/?status=ALL');
   await page.getByRole('link', { name: '알림 기능 테스트' }).click();
   await expect(page.getByText('피드백 마감일이 지났어요.')).toBeVisible();
   await expect(page.getByRole('button', { name: '피드백 남기기' })).toHaveCount(0);

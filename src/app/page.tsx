@@ -16,7 +16,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   const query = new URLSearchParams({ page: String(pageNo), limit: String(LIMIT) });
   if (os === 'ANDROID' || os === 'IOS') query.set('os', os);
-  if (status === 'OPEN' || status === 'CLOSED') query.set('status', status);
+  // 기본은 모집 중. status=ALL 이면 상태로 거르지 않는다.
+  const statusFilter = status === 'ALL' ? undefined : status === 'CLOSED' ? 'CLOSED' : 'OPEN';
+  if (statusFilter) query.set('status', statusFilter);
   if (q) query.set('q', q);
 
   let data: Page<Recruitment> | null = null;
@@ -27,10 +29,12 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     error = e instanceof ApiError ? e.message : '목록을 불러오지 못했어요. 잠시 뒤 다시 시도해 주세요.';
   }
 
-  const filtered = Boolean(os || status || q);
+  const filtered = Boolean(os || q || statusFilter !== 'OPEN');
   const hrefFor = (p: number) => {
     const next = new URLSearchParams(query);
     next.delete('limit');
+    if (status === 'ALL') next.set('status', 'ALL');
+    else if (statusFilter === 'OPEN') next.delete('status');
     next.set('page', String(p));
     return `/?${next}`;
   };

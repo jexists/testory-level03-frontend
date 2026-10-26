@@ -21,13 +21,13 @@ const hrefFor = (f: Filters) => {
   return s ? `/?${s}` : '/';
 };
 
-/** 기기 종류·모집 상태·제목 검색. 값은 주소에 담겨 서버가 그대로 목록을 만든다. */
+/** 기기 종류·모집 상태·제목 검색. 값은 주소에 담겨 서버가 그대로 목록을 만든다. 상태가 없으면 모집 중, 전체는 status=ALL. */
 export function RecruitmentFilters({ os = '', status = '', q = '' }: Filters) {
   const router = useRouter();
   const [query, setQuery] = useState(q);
 
   return (
-    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+    <div className="flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-wrap gap-3">
         <Segmented
           label="기기 종류"
@@ -40,15 +40,15 @@ export function RecruitmentFilters({ os = '', status = '', q = '' }: Filters) {
         <Segmented
           label="모집 상태"
           items={[
-            { label: '전체', href: hrefFor({ os, q }), active: !status },
-            { label: '모집 중', href: hrefFor({ os, status: 'OPEN', q }), active: status === 'OPEN' },
+            { label: '모집 중', href: hrefFor({ os, q }), active: status !== 'ALL' && status !== 'CLOSED' },
             { label: '마감', href: hrefFor({ os, status: 'CLOSED', q }), active: status === 'CLOSED' },
+            { label: '전체', href: hrefFor({ os, status: 'ALL', q }), active: status === 'ALL' },
           ]}
         />
       </div>
       <form
         role="search"
-        className="flex gap-2"
+        className="flex w-full gap-2 sm:w-auto"
         onSubmit={(e) => {
           e.preventDefault();
           router.push(hrefFor({ os, status, q: query.trim() }));
@@ -57,14 +57,14 @@ export function RecruitmentFilters({ os = '', status = '', q = '' }: Filters) {
         <label htmlFor="q" className="sr-only">
           제목 검색
         </label>
-        <div className="relative">
+        <div className="relative flex-1 sm:flex-none">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted" aria-hidden />
           <input
             id="q"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="제목으로 찾기"
-            className="h-10 w-full rounded-control border border-line-strong bg-surface pl-9 pr-3 text-sm placeholder:text-muted hover:border-ink-soft focus-visible:border-brand lg:w-64"
+            className="h-10 w-full rounded-control border border-line-strong bg-surface pl-9 pr-3 text-sm placeholder:text-muted hover:border-ink-soft focus-visible:border-brand sm:w-64"
           />
         </div>
         <Button type="submit" variant="secondary">
