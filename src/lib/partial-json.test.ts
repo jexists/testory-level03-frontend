@@ -36,3 +36,11 @@ describe('parsePartialJson', () => {
     }
   });
 });
+
+describe('parsePartialJson (분석 항목 객체)', () => {
+  it('항목 객체 안에서 끊겨도 지금까지 온 summary 를 읽는다', () => {
+    expect(parsePartialJson('{"overview":"요약","priorityChecks":[{"summary":"앱이 꺼')).toEqual({ overview: '요약', priorityChecks: [{ summary: '앱이 꺼' }] });
+    expect(parsePartialJson('{"priorityChecks":[{"summary":"a","type"')).toEqual({ priorityChecks: [{ summary: 'a' }] });
+    expect(parsePartialJson('{"priorityChecks":[{"summary":"a","feedbackIds":[3,')).toEqual({ priorityChecks: [{ summary: 'a', feedbackIds: [3] }] });
+  });
+});

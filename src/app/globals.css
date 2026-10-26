@@ -133,17 +133,17 @@
     color: transparent;
     animation: shimmer 1.8s linear infinite;
   }
-  /* 글이 써지고 있는 자리에 깜빡이는 커서 */
+  /* 글이 써지고 있는 자리에 숨 쉬듯 커졌다 작아지는 점 */
   .typing-caret::after {
     content: '';
     display: inline-block;
     width: 0.5em;
-    height: 1em;
-    margin-left: 2px;
-    vertical-align: -0.15em;
-    border-radius: 1px;
-    background: var(--color-brand);
-    animation: caret-blink 1s steps(1) infinite;
+    height: 0.5em;
+    margin-left: 0.3em;
+    vertical-align: 0.05em;
+    border-radius: 9999px;
+    background: var(--color-ink);
+    animation: caret-pulse 1s ease-in-out infinite;
   }
 }
 
@@ -153,6 +153,13 @@
   }
   to {
     background-position: 0 0;
+  }
+}
+
+@keyframes caret-pulse {
+  50% {
+    transform: scale(0.6);
+    opacity: 0.5;
   }
 }
 

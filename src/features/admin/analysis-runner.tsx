@@ -1,29 +1,39 @@
 'use client';
 
 import clsx from 'clsx';
-import { Check, Loader2, RotateCcw, Sparkles } from 'lucide-react';
+import { AlertCircle, Check, ChevronDown, Globe, RotateCcw, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Notice } from '@/components/ui/state-view';
 import { useToast } from '@/components/ui/toast';
 import { errorMessage } from '@/lib/api';
 import { parsePartialJson } from '@/lib/partial-json';
 import { streamSse } from '@/lib/sse';
-import type { AnalysisDetail, AnalysisResult } from '@/lib/types';
-import { ANALYSIS_SECTIONS, ResultSection } from './analysis-result';
+import type { AnalysisDetail, AnalysisSectionKey } from '@/lib/types';
+import { ANALYSIS_SECTIONS, DraftSection } from './analysis-result';
 
-type Step = 'connecting' | 'reading' | 'analyzing' | 'saving';
-const ORDER: Step[] = ['connecting', 'reading', 'analyzing', 'saving'];
+type Step = 'connecting' | 'reading' | 'summarizing' | 'searching' | 'judging' | 'saving';
+const ORDER: Step[] = ['connecting', 'reading', 'summarizing', 'searching', 'judging', 'saving'];
 
-/** 모델이 지금까지 쓴 JSON 에서 문자열 목록만 골라낸다. 아직 시작하지 않은 묶음은 빠진다. */
-function toPartial(text: string): Partial<AnalysisResult> {
+/** 참고자료 검색 한 건: 무엇을 검색해 어느 사이트에서 확인된 자료를 찾았는지 */
+type SearchLog = { query: string; hosts: string[] };
+
+type Draft = { overview?: string } & Partial<Record<AnalysisSectionKey, string[]>>;
+
+/** 모델이 지금까지 쓴 요약 JSON 에서 전체 요약과 항목 요약 문장만 골라낸다. 아직 시작하지 않은 묶음은 빠진다. */
+export function toDraft(text: string): Draft {
   const v = parsePartialJson(text);
   if (!v || typeof v !== 'object') return {};
-  const out: Partial<AnalysisResult> = {};
+  const rec = v as Record<string, unknown>;
+  const out: Draft = {};
+  if (typeof rec.overview === 'string') out.overview = rec.overview;
   for (const { key } of ANALYSIS_SECTIONS) {
-    const items = (v as Record<string, unknown>)[key];
-    if (Array.isArray(items)) out[key] = items.filter((t): t is string => typeof t === 'string');
+    const items = rec[key];
+    if (!Array.isArray(items)) continue;
+    out[key] = items.flatMap((t) => {
+      const summary = t && typeof t === 'object' ? (t as { summary?: unknown }).summary : undefined;
+      return typeof summary === 'string' && summary ? [summary] : [];
+    });
   }
   return out;
 }
@@ -39,6 +49,11 @@ export function AnalysisRunner({ recruitmentId, feedbackCount }: { recruitmentId
   const base = `/admin/recruitments/${recruitmentId}/analysis`;
   const [step, setStep] = useState<Step>('connecting');
   const [count, setCount] = useState(feedbackCount);
+  const [search, setSearch] = useState({ done: 0, total: 0, found: 0 });
+  const [searches, setSearches] = useState<SearchLog[]>([]);
+  // 단계가 시작된 시각. 끝난 단계 옆에 걸린 시간을 보여 준다.
+  const [startedAt, setStartedAt] = useState<Partial<Record<Step, number>>>({});
+  const [showLog, setShowLog] = useState(true);
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const [running, setRunning] = useState(true);
@@ -49,6 +64,9 @@ export function AnalysisRunner({ recruitmentId, feedbackCount }: { recruitmentId
     abortRef.current = abort;
     setStep('connecting');
     setText('');
+    setSearch({ done: 0, total: 0, found: 0 });
+    setSearches([]);
+    setStartedAt({ connecting: Date.now() });
     setError('');
     setRunning(true);
     let saved: AnalysisDetail | null = null;
@@ -59,9 +77,15 @@ export function AnalysisRunner({ recruitmentId, feedbackCount }: { recruitmentId
         signal: abort.signal,
         onEvent: ({ event, data }) => {
           if (event === 'status') {
-            const s = data as { step: Step; feedbackCount?: number };
+            const s = data as { step: Step; feedbackCount?: number; total?: number };
             setStep(s.step);
+            setStartedAt((t) => ({ ...t, [s.step]: Date.now() }));
             if (s.feedbackCount != null) setCount(s.feedbackCount);
+            if (s.total != null) setSearch({ done: 0, total: s.total, found: 0 });
+          } else if (event === 'reference') {
+            const r = data as { done: number; total: number; found: number } & Partial<SearchLog>;
+            setSearch({ done: r.done, total: r.total, found: r.found });
+            if (r.query) setSearches((list) => [...list, { query: r.query!, hosts: r.hosts ?? [] }]);
           } else if (event === 'delta') {
             setText((t) => t + (data as { text: string }).text);
           } else if (event === 'done') {
@@ -117,79 +141,132 @@ export function AnalysisRunner({ recruitmentId, feedbackCount }: { recruitmentId
     };
   }, [running, toast]);
 
-  const partial = toPartial(text);
-  const writing = ANALYSIS_SECTIONS.filter((s) => partial[s.key] !== undefined);
-  const activeKey = running && step === 'analyzing' ? writing.at(-1)?.key : undefined;
+  const draft = toDraft(text);
+  const writing = ANALYSIS_SECTIONS.filter((s) => draft[s.key] !== undefined);
+  const summarizing = running && step === 'summarizing';
+  const activeKey = summarizing ? writing.at(-1)?.key : undefined;
   const at = ORDER.indexOf(step);
 
-  const steps: { key: Step; label: string; activeLabel: string }[] = [
-    { key: 'reading', label: `피드백 ${count}건을 모았어요`, activeLabel: '피드백을 모으고 있어요' },
-    {
-      key: 'analyzing',
-      label: 'AI가 피드백을 정리했어요',
-      activeLabel: text ? 'AI가 결과를 쓰고 있어요' : 'AI가 피드백을 읽고 있어요',
-    },
-    { key: 'saving', label: '새 버전으로 저장했어요', activeLabel: '새 버전으로 저장하고 있어요' },
-  ];
+  // 지금 하는 일을 한 줄로 보여 준다. (connecting 은 reading 과 같이 본다)
+  const current: Exclude<Step, 'connecting'> = step === 'connecting' ? 'reading' : step;
+  const activeLabel: Record<typeof current, string> = {
+    reading: '피드백을 모으는 중…',
+    summarizing: text ? '피드백을 요약하는 중…' : `피드백 ${count}건을 읽는 중…`,
+    searching: '웹에서 참고자료 찾는 중…',
+    judging: '할 일을 판단하는 중…',
+    saving: '새 버전으로 저장하는 중…',
+  };
+  const stoppedAt: Record<typeof current, string> = {
+    reading: '피드백을 모으다가 멈췄어요',
+    summarizing: '요약하다가 멈췄어요',
+    searching: '참고자료를 찾다가 멈췄어요',
+    judging: '할 일을 판단하다가 멈췄어요',
+    saving: '저장하다가 멈췄어요',
+  };
+  const isDone = (k: Step) => at > ORDER.indexOf(k);
+  const took = (k: Step) => {
+    const from = startedAt[k];
+    const next = ORDER[ORDER.indexOf(k) + 1];
+    const to = next ? startedAt[next] : undefined;
+    return from && to ? ` · ${Math.max(1, Math.round((to - from) / 1000))}초` : '';
+  };
 
   return (
     <article aria-labelledby="analysis-runner-title" className="panel">
-      <section className="space-y-4 p-5">
-        <div className="flex items-start gap-3">
-          <span className={clsx('grid size-9 shrink-0 place-items-center rounded-full', error ? 'bg-bug-tint text-bug' : 'bg-brand-tint text-brand')}>
-            <Sparkles className={clsx('size-4', running && 'animate-pulse')} aria-hidden />
-          </span>
-          <div className="min-w-0 space-y-0.5">
-            <h2 id="analysis-runner-title" className="text-base">
-              {error ? '분석을 끝내지 못했어요' : '새 분석을 만들고 있어요'}
-            </h2>
-            <p className="text-sm text-muted">
-              {error ? '저장된 이전 버전은 그대로예요.' : '보통 10~30초 걸려요. 끝날 때까지 이 화면에 머물러 주세요.'}
-            </p>
-          </div>
-        </div>
-
-        <ol className="space-y-2.5 pl-1" aria-live="polite">
-          {steps.map((s, i) => {
-            const idx = i + 1; // ORDER 에서의 위치 (connecting 다음부터)
-            const done = at > idx || (!running && !error);
-            const active = running && (at === idx || (s.key === 'reading' && at === 0));
-            const failed = !!error && !done && (at === idx || (s.key === 'reading' && at === 0));
-            return (
-              <li key={s.key} className="flex items-center gap-2.5 text-sm">
-                <span
-                  className={clsx(
-                    'grid size-5 shrink-0 place-items-center rounded-full',
-                    done ? 'bg-praise text-white' : active ? 'text-brand' : failed ? 'bg-bug-tint text-bug' : 'bg-sunken',
-                  )}
-                  aria-hidden
-                >
-                  {done ? <Check className="size-3" strokeWidth={3} /> : active ? <Loader2 className="size-4 animate-spin" /> : failed ? '!' : null}
-                </span>
-                <span className={clsx(done ? 'text-ink' : active ? 'shimmer-text font-medium' : 'text-muted')}>{done ? s.label : s.activeLabel}</span>
-              </li>
-            );
-          })}
-        </ol>
-
-        {error && (
+      <section className="space-y-3 p-5">
+        {error ? (
           <div className="space-y-3">
-            <Notice tone="error">{error}</Notice>
-            <Button variant="secondary" size="sm" onClick={start}>
-              <RotateCcw className="size-4" aria-hidden />
-              다시 시도
-            </Button>
+            <h2 id="analysis-runner-title" className="flex items-center gap-2 text-base text-bug">
+              <AlertCircle className="size-[18px] shrink-0" aria-hidden />
+              {stoppedAt[current]}
+            </h2>
+            <p className="pl-[26px] text-sm text-ink-soft">
+              {error} 저장된 이전 버전은 그대로예요.
+            </p>
+            <div className="pl-[26px]">
+              <Button variant="secondary" size="sm" onClick={start}>
+                <RotateCcw className="size-4" aria-hidden />
+                다시 시도
+              </Button>
+            </div>
           </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowLog((v) => !v)}
+            aria-expanded={showLog}
+            aria-controls="analysis-runner-log"
+            className="flex w-full items-center gap-2 text-left"
+          >
+            <h2 id="analysis-runner-title" className="min-w-0 truncate text-base" aria-live="polite">
+              <span className="shimmer-text">{activeLabel[current]}</span>
+            </h2>
+            {current === 'searching' && search.total > 0 && (
+              <span className="shrink-0 font-mono text-xs text-muted">
+                {search.done}/{search.total}
+              </span>
+            )}
+            <ChevronDown className={clsx('ml-auto size-4 shrink-0 text-muted transition-transform', showLog && 'rotate-180')} aria-hidden />
+          </button>
+        )}
+
+        {showLog && (
+          <ol id="analysis-runner-log" className="ml-1 space-y-1.5 border-l-[1.5px] border-line pl-4 text-sm text-ink-soft">
+            {isDone('reading') && <LogLine>피드백 {count}건을 읽었어요</LogLine>}
+            {isDone('summarizing') && <LogLine>요약했어요{took('summarizing')}</LogLine>}
+            {searches.map((q, i) => (
+              <li key={i} className="space-y-1">
+                <p className="flex items-start gap-1.5">
+                  <Search className="mt-[3px] size-3.5 shrink-0 text-muted" aria-hidden />
+                  <span>“{q.query}” 검색</span>
+                </p>
+                <p className="flex flex-wrap gap-1.5 pl-5">
+                  {q.hosts.length === 0 ? (
+                    <span className="text-xs text-muted">확인된 자료 없음</span>
+                  ) : (
+                    q.hosts.map((h) => (
+                      <span key={h} className="inline-flex items-center gap-1 rounded-full border border-line bg-canvas px-2 text-xs leading-5 text-ink-soft">
+                        <Globe className="size-3 text-muted" aria-hidden />
+                        {h}
+                      </span>
+                    ))
+                  )}
+                </p>
+              </li>
+            ))}
+            {isDone('searching') && (
+              <LogLine>
+                {search.total === 0 ? '찾아볼 문제가 없어 검색은 건너뛰었어요' : `참고자료 ${search.found}건을 확인했어요${took('searching')}`}
+              </LogLine>
+            )}
+            {isDone('judging') && <LogLine>할 일을 판단했어요{took('judging')}</LogLine>}
+            {!isDone('reading') && <li className="text-muted">곧 시작해요</li>}
+          </ol>
         )}
       </section>
 
+      {draft.overview && (
+        <section aria-label="한눈에 보기" className="px-5 pt-2">
+          <p className={clsx('text-[0.9375rem] leading-relaxed text-ink', summarizing && writing.length === 0 && 'typing-caret')}>{draft.overview}</p>
+        </section>
+      )}
       {writing.length > 0 && (
         <div>
           {writing.map((s) => (
-            <ResultSection key={s.key} title={s.title} dot={s.dot} ordered={s.ordered} items={partial[s.key] ?? []} typing={s.key === activeKey} />
+            <DraftSection key={s.key} title={s.title} dot={s.dot} ordered={s.ordered} items={draft[s.key] ?? []} typing={s.key === activeKey} />
           ))}
         </div>
       )}
+      {!error && <p className="px-5 pb-5 text-xs text-muted">보통 30초~1분 걸려요. 끝날 때까지 이 화면에 머물러 주세요.</p>}
     </article>
+  );
+}
+
+function LogLine({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="flex items-start gap-1.5">
+      <Check className="mt-[3px] size-3.5 shrink-0 text-muted" aria-hidden />
+      <span>{children}</span>
+    </li>
   );
 }

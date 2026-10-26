@@ -143,11 +143,55 @@ export interface AdminFeedback extends Feedback {
   authorFeedbackCount: number;
 }
 
-export interface AnalysisResult {
-  recurringIssues: string[];
-  improvementRequests: string[];
-  positiveOpinions: string[];
-  priorityChecks: string[];
+export type AnalysisItemType = 'bugSuspected' | 'featureRequest' | 'usability' | 'positive' | 'other';
+export type Confidence = 'high' | 'medium' | 'low';
+export type AiSuitability = 'recommended' | 'optional' | 'unnecessary' | 'insufficientInformation';
+
+/** 웹 검색 결과에서 확인되고 서버가 직접 열어 본 참고자료 */
+export interface AnalysisReference {
+  id: string;
+  url: string;
+  title: string;
+  citedText: string;
+  query: string;
+  checkedAt: string;
+}
+
+/** AI 의 판단 (사용자 의견이 아니고 확정된 해결책도 아니다) */
+export interface AnalysisAction {
+  recommendedAction: string;
+  rationale: string;
+  confidence: Confidence;
+  aiSuitability: AiSuitability;
+  aiReason: string;
+  referenceIds: string[];
+}
+
+export interface AnalysisItem {
+  summary: string;
+  type: AnalysisItemType | null;
+  feedbackIds: number[];
+  mentionCount: number;
+  evidence: string[];
+  references: AnalysisReference[];
+  action: AnalysisAction | null;
+}
+
+export type AnalysisSectionKey = 'recurringIssues' | 'improvementRequests' | 'positiveOpinions' | 'priorityChecks';
+
+/** schemaVersion 1 은 예전 문자열 목록 버전을 서버가 이 모양으로 바꿔 준 것 (summary 만 있다) */
+export type AnalysisResult = { schemaVersion: 1 | 2; overview: string } & Record<AnalysisSectionKey, AnalysisItem[]>;
+
+/** 분석 근거가 된 피드백 원문과 작성자·신청 당시 기기 */
+export interface AnalysisFeedback {
+  id: number;
+  type: FeedbackType;
+  title: string;
+  content: string;
+  createdAt: string;
+  nickname: string | null;
+  deviceType: string | null;
+  deviceModel: string | null;
 }
 
 export interface AnalysisSummary {
@@ -160,6 +204,7 @@ export interface AnalysisSummary {
 
 export interface AnalysisDetail extends AnalysisSummary {
   result: AnalysisResult;
+  feedbacks: Record<string, AnalysisFeedback>;
 }
 
 export interface DashboardRecruitment {

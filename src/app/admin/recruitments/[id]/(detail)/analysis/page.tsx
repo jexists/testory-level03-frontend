@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { LinkButton } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/state-view';
 import { getAdminRecruitment, type AdminRecruitmentDetail } from '@/features/admin/admin-recruitment';
-import { ANALYSIS_SECTIONS, ResultSection } from '@/features/admin/analysis-result';
+import { ANALYSIS_SECTIONS, AnalysisOverview, DraftSection, ResultSection } from '@/features/admin/analysis-result';
 import { AnalysisRunner } from '@/features/admin/analysis-runner';
 import { LoadError } from '@/features/admin/load-error';
 import { ReviewButton } from '@/features/admin/review-button';
@@ -117,10 +117,16 @@ export default async function RecruitmentAnalysisPage(props: { params: Promise<{
                 </div>
                 {review}
               </header>
+              {detail.result.schemaVersion === 2 && <AnalysisOverview result={detail.result} />}
               <div>
-                {ANALYSIS_SECTIONS.map((s) => (
-                  <ResultSection key={s.key} title={s.title} dot={s.dot} ordered={s.ordered} items={detail.result[s.key] ?? []} />
-                ))}
+                {ANALYSIS_SECTIONS.map((s) =>
+                  detail.result.schemaVersion === 2 ? (
+                    <ResultSection key={s.key} title={s.title} dot={s.dot} ordered={s.ordered} items={detail.result[s.key]} feedbacks={detail.feedbacks} />
+                  ) : (
+                    // 예전 버전은 요약 문장만 있어 목록으로만 보여 준다.
+                    <DraftSection key={s.key} title={s.title} dot={s.dot} ordered={s.ordered} items={detail.result[s.key].map((i) => i.summary)} />
+                  ),
+                )}
               </div>
             </article>
           ) : (
