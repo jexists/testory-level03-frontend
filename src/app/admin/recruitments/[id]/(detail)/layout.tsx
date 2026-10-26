@@ -1,3 +1,4 @@
+import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Chip, StageBadge } from '@/components/ui/badge';
 import { SeatStrip } from '@/components/ui/seat-strip';
@@ -9,7 +10,6 @@ import { NavLink } from '@/features/admin/nav-link';
 import { toPositiveInt } from '@/features/admin/query';
 import { RecruitmentActions } from '@/features/admin/recruitment-actions';
 import { formatDate, formatDateYear, formatPeriod } from '@/lib/format';
-import { KIND_LABEL } from '@/lib/labels';
 
 /** 모집글 상세: 위에는 요약과 관리 버튼, 아래는 신청자 · 피드백 · AI 분석 탭 */
 export default async function RecruitmentDetailLayout(props: { params: Promise<{ id: string }>; children: React.ReactNode }) {
@@ -17,7 +17,8 @@ export default async function RecruitmentDetailLayout(props: { params: Promise<{
   const id = toPositiveInt(raw);
 
   const back = (
-    <Link href="/admin" className="text-sm text-brand-ink underline-offset-4 hover:underline">
+    <Link href="/admin" className="inline-flex items-center gap-0.5 text-sm text-brand-ink underline-offset-4 hover:underline">
+      <ChevronLeft className="size-4" aria-hidden />
       대시보드로
     </Link>
   );
@@ -60,7 +61,6 @@ export default async function RecruitmentDetailLayout(props: { params: Promise<{
             </h1>
             <div className="flex flex-wrap items-center gap-2">
               <StageBadge stage={r.stage} />
-              <Chip>{KIND_LABEL[r.kind]}</Chip>
               {deleted && <Chip>삭제됨 · {formatDateYear(r.deletedAt as string)}</Chip>}
             </div>
           </div>

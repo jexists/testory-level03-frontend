@@ -9,7 +9,6 @@ import { FeedbackForm } from '@/features/feedbacks/feedback-form';
 import { FeedbackItem } from '@/features/feedbacks/feedback-item';
 import { ApiError } from '@/lib/api';
 import { dDay, formatDateTime } from '@/lib/format';
-import { KIND_LABEL } from '@/lib/labels';
 import { getCurrentUser, serverApi } from '@/lib/server-api';
 import type { MyFeedback, Recruitment } from '@/lib/types';
 
@@ -53,7 +52,7 @@ export default async function RecruitmentDetailPage({ params }: { params: Params
           <header className="space-y-3">
             <h1 className="text-2xl">{r.title}</h1>
             <p className="text-sm text-muted">
-              {KIND_LABEL[r.kind]} 테스트 <span aria-hidden>·</span> 모집 마감(테스트 시작) {formatDateTime(r.startAt)} <span aria-hidden>·</span> 종료{' '}
+              모집 마감(테스트 시작) {formatDateTime(r.startAt)} <span aria-hidden>·</span> 종료{' '}
               {formatDateTime(r.endAt)} <span aria-hidden>·</span> 피드백 마감 {formatDateTime(r.feedbackDueAt)}
             </p>
           </header>

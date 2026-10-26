@@ -2,7 +2,6 @@
 
 export type Os = 'ANDROID' | 'IOS';
 export type Role = 'ADMIN' | 'USER';
-export type RecruitmentKind = 'APP_FULL' | 'FEATURE';
 export type DeviceScope = 'ALL' | 'MODEL';
 export type FeedbackType = 'BUG' | 'IMPROVEMENT' | 'PRAISE';
 export type ApplicationStatus = 'APPLIED' | 'CANCELLED';
@@ -46,7 +45,6 @@ export interface Recruitment {
   id: number;
   title: string;
   description: string;
-  kind: RecruitmentKind;
   capacity: number;
   startAt: string;
   endAt: string;
