@@ -15,8 +15,8 @@ export default async function EditRecruitmentPage(props: { params: Promise<{ id:
   const { id: raw } = await props.params;
   const id = toPositiveInt(raw);
   const back = (
-    <Link href="/admin/recruitments" className="text-sm text-brand-ink underline-offset-4 hover:underline">
-      모집글 목록으로
+    <Link href={id ? `/admin/recruitments/${id}` : '/admin'} className="text-sm text-brand-ink underline-offset-4 hover:underline">
+      {id ? '모집글로 돌아가기' : '대시보드로'}
     </Link>
   );
 
@@ -51,7 +51,7 @@ export default async function EditRecruitmentPage(props: { params: Promise<{ id:
           <ErrorState
             title="삭제된 모집글은 고칠 수 없어요"
             description="삭제된 글은 목록에서 '삭제된 글 포함'을 골라 기록만 확인할 수 있어요."
-            action={<LinkButton href="/admin/recruitments?deleted=only" variant="secondary">삭제된 글 보기</LinkButton>}
+            action={<LinkButton href="/admin?deleted=only" variant="secondary">삭제된 글 보기</LinkButton>}
           />
         </div>
       </>

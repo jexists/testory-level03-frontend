@@ -1,11 +1,9 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Chip, StageBadge } from '@/components/ui/badge';
-import { LinkButton } from '@/components/ui/button';
-import { EmptyState, ErrorState } from '@/components/ui/state-view';
-import { SeatStrip } from '@/components/ui/seat-strip';
+import { Chip } from '@/components/ui/badge';
+import { EmptyState } from '@/components/ui/state-view';
+import { getAdminRecruitment } from '@/features/admin/admin-recruitment';
 import { LoadError } from '@/features/admin/load-error';
-import { PageHeader, td, th } from '@/features/admin/page-header';
+import { td, th } from '@/features/admin/page-header';
 import { first, toPositiveInt, type SearchParams } from '@/features/admin/query';
 import { SegmentedParam } from '@/features/admin/url-filters';
 import { formatDateTime } from '@/lib/format';
@@ -19,68 +17,22 @@ export default async function ApplicantsPage(props: { params: Promise<{ id: stri
   const [{ id: raw }, sp] = await Promise.all([props.params, props.searchParams]);
   const id = toPositiveInt(raw);
   const sort = first(sp.sort) === 'feedback_desc' ? 'feedback_desc' : 'applied_desc';
-
-  const back = (
-    <Link href="/admin/recruitments" className="text-sm text-brand-ink underline-offset-4 hover:underline">
-      모집글 목록으로
-    </Link>
-  );
-
-  if (!id) {
-    return (
-      <>
-        {back}
-        <div className="panel">
-          <ErrorState title="찾을 수 없는 모집글이에요" description="주소를 다시 확인하거나 목록에서 모집글을 골라 주세요." />
-        </div>
-      </>
-    );
-  }
+  // 잘못된 주소·불러오기 실패는 layout 이 안내한다.
+  if (!id) return null;
 
   let recruitment: Recruitment;
   let applicants: Applicant[];
   try {
     [recruitment, applicants] = await Promise.all([
-      serverApi<Recruitment>(`/admin/recruitments/${id}`),
+      getAdminRecruitment(id),
       serverApi<Applicant[]>(`/admin/recruitments/${id}/applications?sort=${sort}`),
     ]);
   } catch (e) {
-    return (
-      <>
-        {back}
-        <LoadError error={e} />
-      </>
-    );
+    return <LoadError error={e} />;
   }
-
-  const deleted = !!recruitment.deletedAt;
 
   return (
     <>
-      {back}
-      <PageHeader title="신청자 조회" />
-
-      <section aria-label="모집글 요약" className="panel flex flex-wrap items-center gap-x-6 gap-y-3 p-4">
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <p className="font-semibold">{recruitment.title}</p>
-          <div className="flex flex-wrap items-center gap-2">
-            <StageBadge stage={recruitment.stage} />
-            {deleted && <Chip>삭제됨</Chip>}
-          </div>
-        </div>
-        <div className="space-y-1">
-          <SeatStrip capacity={recruitment.capacity} filled={recruitment.participants} closed={recruitment.status === 'CLOSED'} />
-          <p className="font-mono text-xs text-ink-soft">
-            참여 중 {recruitment.participants} / 정원 {recruitment.capacity}
-          </p>
-        </div>
-        {!deleted && (
-          <LinkButton href={`/admin/analysis?recruitmentId=${id}`} variant="secondary" size="sm">
-            AI 분석 보기
-          </LinkButton>
-        )}
-      </section>
-
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg">신청자 {applicants.length}명</h2>
         <SegmentedParam

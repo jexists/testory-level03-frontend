@@ -119,9 +119,11 @@ test('관리자는 대시보드에서 단계별로 보고, 분석을 확인 완�
   await page.goto('/admin?stage=DONE');
   await expect(page.getByRole('link', { name: '알림 기능 테스트' })).toBeVisible();
 
-  await page.goto('/admin/analysis');
-  await page.getByLabel('모집글').click();
-  await page.getByRole('option', { name: '알림 기능 테스트' }).click();
+  await page.goto('/admin?q=알림');
+  await page.getByRole('link', { name: '알림 기능 테스트' }).click();
+  await page.getByRole('link', { name: /^피드백/ }).click();
+  await expect(page.getByRole('button', { name: 'AI 분석 실행' })).toBeVisible();
+  await page.getByRole('link', { name: 'AI 분석' }).click();
   await expect(page.getByText('v2').first()).toBeVisible();
   await page.getByRole('link', { name: /v1/ }).first().click();
   await expect(page.getByText('반복되는 문제')).toBeVisible();

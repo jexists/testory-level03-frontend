@@ -81,6 +81,19 @@ export interface Page<T> {
   limit: number;
 }
 
+/** 관리자 목록의 한 줄: 6단계 진행 단계와 할 일 판단에 필요한 값 */
+export interface AdminRecruitment extends Recruitment {
+  stage: Stage;
+  feedbackCount: number;
+  bugCount: number;
+  latestAnalysisVersion: number | null;
+}
+
+/** 관리자 목록. 단계 탭 숫자는 검색·삭제 조건만 반영한 값이다. */
+export interface AdminRecruitmentPage extends Page<AdminRecruitment> {
+  stageCounts: Record<Stage, number>;
+}
+
 export interface MyApplication {
   id: number;
   status: ApplicationStatus;

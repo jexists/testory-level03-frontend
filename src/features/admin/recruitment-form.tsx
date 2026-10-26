@@ -105,10 +105,11 @@ export function RecruitmentForm({ recruitment }: Props) {
       devices: v.anyDevice ? [] : v.devices.map((d) => ({ os: d.os, scope: d.scope, deviceModelId: d.scope === 'MODEL' ? d.deviceModelId : null })),
     };
     try {
-      if (recruitment) await api(`/admin/recruitments/${recruitment.id}`, { method: 'PATCH', body });
-      else await api('/admin/recruitments', { method: 'POST', body });
+      const saved = recruitment
+        ? await api<Recruitment>(`/admin/recruitments/${recruitment.id}`, { method: 'PATCH', body })
+        : await api<Recruitment>('/admin/recruitments', { method: 'POST', body });
       toast(editing ? '저장했어요.' : '등록했어요.');
-      router.push('/admin/recruitments');
+      router.push(`/admin/recruitments/${saved.id}`);
       router.refresh();
     } catch (e) {
       // 서버가 최종 판단한다. 입력한 내용은 그대로 두고 이유만 위쪽에 보여 준다.
@@ -214,7 +215,7 @@ export function RecruitmentForm({ recruitment }: Props) {
       />
 
       <div className="flex flex-wrap justify-end gap-2 border-t border-line pt-5">
-        <LinkButton href="/admin/recruitments" variant="secondary">
+        <LinkButton href={recruitment ? `/admin/recruitments/${recruitment.id}` : '/admin'} variant="secondary">
           취소
         </LinkButton>
         <Button type="submit" loading={isSubmitting}>

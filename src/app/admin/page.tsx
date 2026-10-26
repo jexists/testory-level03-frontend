@@ -1,19 +1,25 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import clsx from 'clsx';
+import { Chip, StageBadge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/state-view';
 import { InfoTip } from '@/components/ui/info-tip';
 import { LinkButton } from '@/components/ui/button';
-import { StageBadge } from '@/components/ui/badge';
+import { Pagination } from '@/components/ui/pagination';
 import { LoadError } from '@/features/admin/load-error';
 import { PageHeader, td, th } from '@/features/admin/page-header';
-import { first, type SearchParams } from '@/features/admin/query';
+import { first, toPositiveInt, toQuery, type SearchParams } from '@/features/admin/query';
+import { RestoreButton } from '@/features/admin/recruitment-actions';
+import { SearchParam, SegmentedParam } from '@/features/admin/url-filters';
 import { dDay, formatDate } from '@/lib/format';
 import { STAGE_LABEL, STAGES } from '@/lib/labels';
 import { serverApi } from '@/lib/server-api';
-import type { Dashboard, DashboardRecruitment, Stage } from '@/lib/types';
+import type { AdminRecruitment, AdminRecruitmentPage, Dashboard, Stage } from '@/lib/types';
 
 export const metadata: Metadata = { title: '관리자 대시보드' };
+
+const LIMIT = 20;
+const DELETED = ['exclude', 'include', 'only'];
 
 function Figure({ label, value, info }: { label: string; value: number; info?: string }) {
   return (
@@ -28,7 +34,7 @@ function Figure({ label, value, info }: { label: string; value: number; info?: s
 }
 
 /** 단계마다 지금 봐야 할 날짜 하나 */
-function schedule(r: DashboardRecruitment): string {
+function schedule(r: AdminRecruitment): string {
   switch (r.stage) {
     case 'RECRUITING':
     case 'RECRUIT_CLOSED':
@@ -40,12 +46,13 @@ function schedule(r: DashboardRecruitment): string {
   }
 }
 
-/** 관리자가 해야 할 일: 피드백이 다 모이면 분석, 분석이 끝나면 확인 */
-function NextAction({ r }: { r: DashboardRecruitment }) {
-  const href = `/admin/analysis?recruitmentId=${r.id}`;
+/** 관리자가 해야 할 일: 피드백이 다 모이면 분석, 분석이 끝나면 확인. 삭제된 글은 복구만 할 수 있다. */
+function NextAction({ r }: { r: AdminRecruitment }) {
+  if (r.deletedAt) return <RestoreButton id={r.id} title={r.title} />;
+  const href = `/admin/recruitments/${r.id}/analysis`;
   if (r.stage === 'FEEDBACK_DONE') {
     return r.feedbackCount > 0 ? (
-      <LinkButton href={href} size="sm">
+      <LinkButton href={`/admin/recruitments/${r.id}/feedbacks`} size="sm">
         AI 분석하기
       </LinkButton>
     ) : (
@@ -73,28 +80,41 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
   const sp = await props.searchParams;
   const stageParam = first(sp.stage);
   const stage = STAGES.includes(stageParam as Stage) ? (stageParam as Stage) : undefined;
+  const deleted = DELETED.includes(first(sp.deleted) ?? '') ? (first(sp.deleted) as string) : 'exclude';
+  const q = first(sp.q)?.trim() || undefined;
+  const page = toPositiveInt(first(sp.page)) ?? 1;
+  const searched = deleted !== 'exclude' || !!q;
+
+  const header = <PageHeader title="대시보드" actions={<LinkButton href="/admin/recruitments/new">새 모집글 등록</LinkButton>} />;
 
   let data: Dashboard;
+  let list: AdminRecruitmentPage;
   try {
-    data = await serverApi<Dashboard>('/admin/dashboard');
+    [data, list] = await Promise.all([
+      serverApi<Dashboard>('/admin/dashboard'),
+      serverApi<AdminRecruitmentPage>(`/admin/recruitments${toQuery({ stage, deleted, q, page, limit: LIMIT })}`),
+    ]);
   } catch (e) {
     return (
       <>
-        <PageHeader title="대시보드" />
+        {header}
         <LoadError error={e} />
       </>
     );
   }
 
-  const rows = stage ? data.recruitments.filter((r) => r.stage === stage) : data.recruitments;
+  // 단계 탭·쪽 번호를 눌러도 검색어와 삭제 조건은 그대로 둔다.
+  const hrefFor = (over: { stage?: Stage; page?: number }) =>
+    `/admin${toQuery({ stage: over.stage, q, deleted: deleted === 'exclude' ? undefined : deleted, page: over.page && over.page > 1 ? over.page : undefined })}`;
+  const allCount = Object.values(list.stageCounts).reduce((a, b) => a + b, 0);
   const tabs: { value?: Stage; label: string; count: number }[] = [
-    { label: '전체', count: data.recruitments.length },
-    ...STAGES.map((s) => ({ value: s, label: STAGE_LABEL[s], count: data.stageCounts[s] })),
+    { label: '전체', count: allCount },
+    ...STAGES.map((s) => ({ value: s, label: STAGE_LABEL[s], count: list.stageCounts[s] })),
   ];
 
   return (
     <>
-      <PageHeader title="대시보드" />
+      {header}
 
       <dl className="panel grid grid-cols-1 divide-y divide-line sm:grid-cols-3 sm:divide-x sm:divide-y-0" aria-label="모집 현황">
         <Figure label="모집 중" value={data.counts.recruiting} />
@@ -104,8 +124,26 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
 
       <section aria-labelledby="by-stage" className="space-y-3">
         <h2 id="by-stage" className="text-lg">
-          단계별 모집글
+          모집글
         </h2>
+
+        <div className="panel grid gap-4 p-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end">
+          <SearchParam id="q" label="제목 검색" param="q" placeholder="제목에 들어간 말" />
+          <div className="space-y-1.5">
+            <p className="text-sm font-semibold text-ink">삭제된 글</p>
+            <SegmentedParam
+              label="삭제된 글 보기"
+              param="deleted"
+              defaultValue="exclude"
+              options={[
+                { value: 'exclude', label: '숨기기' },
+                { value: 'include', label: '함께 보기' },
+                { value: 'only', label: '삭제된 글만' },
+              ]}
+            />
+          </div>
+        </div>
+
         <nav aria-label="진행 단계" className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <ul className="flex gap-1.5">
             {tabs.map((t) => {
@@ -113,7 +151,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
               return (
                 <li key={t.label}>
                   <Link
-                    href={t.value ? `/admin?stage=${t.value}` : '/admin'}
+                    href={hrefFor({ stage: t.value })}
                     aria-current={on ? 'page' : undefined}
                     className={clsx(
                       'inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-control border px-3 text-sm font-medium transition-colors',
@@ -130,14 +168,24 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
         </nav>
 
         <div className="panel overflow-x-auto">
-          {data.recruitments.length === 0 ? (
-            <EmptyState
-              title="아직 모집글이 없어요"
-              description="모집글을 등록하면 진행 단계가 여기에 나타나요."
-              action={<LinkButton href="/admin/recruitments/new">새 모집글 등록</LinkButton>}
-            />
-          ) : rows.length === 0 ? (
-            <EmptyState title={`'${STAGE_LABEL[stage!]}' 단계인 모집글이 없어요`} description="다른 단계를 골라 보세요." />
+          {list.items.length === 0 ? (
+            stage || searched ? (
+              <EmptyState
+                title={stage ? `'${STAGE_LABEL[stage]}' 단계인 모집글이 없어요` : '조건에 맞는 모집글이 없어요'}
+                description="다른 단계를 고르거나 검색 조건을 바꿔 보세요."
+                action={
+                  <LinkButton href="/admin" variant="secondary">
+                    필터 모두 지우기
+                  </LinkButton>
+                }
+              />
+            ) : (
+              <EmptyState
+                title="아직 모집글이 없어요"
+                description="모집글을 등록하면 진행 단계가 여기에 나타나요."
+                action={<LinkButton href="/admin/recruitments/new">새 모집글 등록</LinkButton>}
+              />
+            )
           ) : (
             <table className="w-full min-w-[48rem] text-sm">
               <caption className="sr-only">모집글별 진행 단계, 참여자 수, 피드백 수와 할 일</caption>
@@ -164,12 +212,20 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {rows.map((r) => (
-                  <tr key={r.id}>
+                {list.items.map((r) => (
+                  <tr key={r.id} className={r.deletedAt ? 'bg-canvas text-ink-soft' : undefined}>
                     <th scope="row" className={`${td} text-left font-semibold`}>
-                      <Link href={`/admin/recruitments/${r.id}/applicants`} className="text-brand-ink underline-offset-4 hover:underline">
+                      <Link
+                        href={`/admin/recruitments/${r.id}`}
+                        className={clsx('underline-offset-4 hover:underline', r.deletedAt ? 'text-ink-soft' : 'text-brand-ink')}
+                      >
                         {r.title}
                       </Link>
+                      {r.deletedAt && (
+                        <span className="mt-1 block font-normal">
+                          <Chip>삭제됨 · {formatDate(r.deletedAt)}</Chip>
+                        </span>
+                      )}
                     </th>
                     <td className={td}>
                       <StageBadge stage={r.stage} />
@@ -191,6 +247,8 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
             </table>
           )}
         </div>
+        <p className="text-xs text-muted">전체 {list.total}건</p>
+        <Pagination page={list.page} total={list.total} limit={list.limit} hrefFor={(p) => hrefFor({ stage, page: p })} />
       </section>
     </>
   );

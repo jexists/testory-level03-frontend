@@ -25,7 +25,7 @@ export function AnalyzeButton({ recruitmentId, disabledReason }: { recruitmentId
     try {
       const saved = await api<AnalysisDetail>(`/admin/recruitments/${recruitmentId}/analyses`, { method: 'POST' });
       toast(`새 분석(v${saved.versionNo})을 저장했어요.`);
-      router.push(`/admin/analysis?recruitmentId=${recruitmentId}&version=${saved.versionNo}`);
+      router.push(`/admin/recruitments/${recruitmentId}/analysis?version=${saved.versionNo}`);
       router.refresh();
     } catch (e) {
       // 실패해도 이미 저장된 버전은 그대로 보여 준다.

@@ -8,8 +8,8 @@ export const metadata: Metadata = { title: '새 모집글 등록' };
 export default function NewRecruitmentPage() {
   return (
     <>
-      <Link href="/admin/recruitments" className="text-sm text-brand-ink underline-offset-4 hover:underline">
-        모집글 목록으로
+      <Link href="/admin" className="text-sm text-brand-ink underline-offset-4 hover:underline">
+        대시보드로
       </Link>
       <PageHeader title="새 모집글 등록" />
       <RecruitmentForm />
