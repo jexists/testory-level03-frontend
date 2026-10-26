@@ -22,8 +22,11 @@ export interface User {
   email: string;
   nickname: string;
   role: Role;
+  /** 목록에서 고른 OS. 직접 입력했다면 null 이고 deviceOsName 에 이름이 있다. */
   deviceType: Os | null;
-  deviceModel: { id: number; modelName: string } | null;
+  deviceOsName: string | null;
+  /** 직접 입력한 모델이면 id 가 null 이다. */
+  deviceModel: { id: number | null; modelName: string } | null;
 }
 
 export interface DeviceCondition {
@@ -70,7 +73,8 @@ export interface Page<T> {
 export interface MyApplication {
   id: number;
   status: ApplicationStatus;
-  deviceType: Os;
+  /** 신청 당시 OS: ANDROID/IOS 또는 직접 입력한 OS 이름 */
+  deviceType: string;
   deviceModel: string;
   appliedAt: string;
   cancelledAt: string | null;
@@ -82,7 +86,8 @@ export interface Applicant {
   id: number;
   userId: number;
   nickname: string;
-  deviceType: Os;
+  /** 신청 당시 OS: ANDROID/IOS 또는 직접 입력한 OS 이름 */
+  deviceType: string;
   deviceModel: string;
   appliedAt: string;
   cancelledAt: string | null;

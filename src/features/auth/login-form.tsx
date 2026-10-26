@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
-import { Field, Input, describedBy } from '@/components/ui/field';
+import { Field, Input, PasswordInput, describedBy } from '@/components/ui/field';
 import { Notice } from '@/components/ui/state-view';
 import { ApiError, api } from '@/lib/api';
 import type { User } from '@/lib/types';
@@ -46,7 +46,6 @@ export function LoginForm() {
   return (
     <AuthShell
       title="로그인"
-      description="모집글에 신청하고 피드백을 남기려면 로그인해 주세요."
       footer={
         <>
           아직 계정이 없나요?{' '}
@@ -56,22 +55,23 @@ export function LoginForm() {
         </>
       }
     >
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-5">
         {serverError && <Notice tone="error">{serverError}</Notice>}
         <Field id="email" label="이메일" error={errors.email?.message}>
-          <Input id="email" type="email" autoComplete="email" aria-invalid={!!errors.email} aria-describedby={describedBy('email', errors.email?.message)} {...register('email')} />
+          <Input inputSize="lg" id="email" type="email" autoComplete="email" placeholder="name@example.com" aria-invalid={!!errors.email} aria-describedby={describedBy('email', errors.email?.message)} {...register('email')} />
         </Field>
         <Field id="password" label="비밀번호" error={errors.password?.message}>
-          <Input
+          <PasswordInput
+            inputSize="lg"
             id="password"
-            type="password"
             autoComplete="current-password"
+            placeholder="비밀번호 입력"
             aria-invalid={!!errors.password}
             aria-describedby={describedBy('password', errors.password?.message)}
             {...register('password')}
           />
         </Field>
-        <Button type="submit" className="w-full" loading={isSubmitting}>
+        <Button type="submit" size="lg" className="mt-8 w-full" loading={isSubmitting}>
           로그인
         </Button>
       </form>
