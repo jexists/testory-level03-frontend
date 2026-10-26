@@ -1,11 +1,12 @@
 'use client';
 
-import Link from 'next/link';
+import { CheckCircle2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Chip, StageBadge } from '@/components/ui/badge';
 import { Button, LinkButton } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { InfoTip } from '@/components/ui/info-tip';
 import { Notice } from '@/components/ui/state-view';
 import { SeatStrip } from '@/components/ui/seat-strip';
 import { useToast } from '@/components/ui/toast';
@@ -23,11 +24,16 @@ function deviceAllowed(r: Recruitment, user: User): boolean {
   );
 }
 
-/** 신청을 받지 않는 이유 */
-function closedText(r: Recruitment): string {
-  if (r.stage === 'RECRUIT_CLOSED') return '담당자가 모집을 마감했어요.';
-  if (r.stage === 'FEEDBACK_CLOSED') return '테스트와 피드백 기간이 끝났어요.';
-  return r.testStartedAt ? '정원이 차서 테스트가 시작됐어요.' : '테스트가 이미 시작되어 신청할 수 없어요.';
+/** 내 기기 한 줄. 카드와 기기 변경 안내 모달이 같이 쓴다. */
+function myDevice(user: User) {
+  return (user.deviceType || user.deviceOsName) && user.deviceModel ? (
+    <p className="flex flex-wrap items-center gap-2 text-sm text-ink">
+      <Chip>{osText(user.deviceType, user.deviceOsName)}</Chip>
+      <span>{user.deviceModel.modelName}</span>
+    </p>
+  ) : (
+    <p className="text-sm text-danger">내 기기가 등록되어 있지 않아요.</p>
+  );
 }
 
 export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment; user: User | null }) {
@@ -35,6 +41,7 @@ export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment;
   const { toast } = useToast();
   const [busy, setBusy] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [applyOpen, setApplyOpen] = useState(false);
   const [error, setError] = useState('');
   const mine = r.myApplication?.status === 'APPLIED' ? r.myApplication : null;
   const started = r.phase !== 'UPCOMING';
@@ -45,8 +52,10 @@ export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment;
     try {
       await api(`/recruitments/${r.id}/applications`, { method: 'POST' });
       toast('신청했어요.');
+      setApplyOpen(false);
       router.refresh();
     } catch (e) {
+      setApplyOpen(false);
       setError(errorMessage(e));
     } finally {
       setBusy(false);
@@ -73,56 +82,61 @@ export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment;
   const allowed = user ? deviceAllowed(r, user) : true;
 
   return (
-    <aside aria-label="신청" className="panel space-y-5 p-5 lg:sticky lg:top-20">
+    <aside aria-label="신청" className="panel flex flex-col gap-5 p-5 lg:sticky lg:top-20">
       <div className="space-y-3">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base">자리 현황</h2>
           <StageBadge stage={r.stage} />
         </div>
         <SeatStrip capacity={r.capacity} filled={r.participants} closed={r.status === 'CLOSED'} size="lg" />
-        <p className="text-sm text-muted">
-          <span className="font-mono text-xl font-medium text-ink">{r.remaining}</span> 자리 남음 · 정원 {r.capacity}명 중 {r.participants}명 참여
-        </p>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+          <p className="text-lg font-semibold text-ink">
+            <span className="font-mono">{r.remaining}</span>자리 남음
+          </p>
+          <p className="text-sm text-muted">
+            정원 {r.capacity}명 중 {r.participants}명 참여
+          </p>
+        </div>
       </div>
 
       {error && <Notice tone="error">{error}</Notice>}
 
       {!user ? (
-        <div className="space-y-2 border-t border-line pt-4">
-          <p className="text-sm text-muted">신청하려면 로그인이 필요해요.</p>
+        // 신청을 받지 않는 모집글이면 로그인으로 보내지 않고 마감을 보여 준다.
+        r.status === 'OPEN' ? (
           <LinkButton href={`/login?next=/recruitments/${r.id}`} className="w-full">
             로그인하고 신청하기
           </LinkButton>
-        </div>
+        ) : (
+          <Button className="w-full" disabled>
+            신청 마감
+          </Button>
+        )
       ) : user.role === 'ADMIN' ? (
-        <p className="border-t border-line pt-4 text-sm text-muted">관리자 계정은 신청할 수 없어요. 테스터 계정으로 로그인해 주세요.</p>
+        <Button className="w-full" disabled>
+          신청 불가
+        </Button>
       ) : (
-        <div className="space-y-4 border-t border-line pt-4">
+        <div className="space-y-4">
           <div className="space-y-1.5">
-            <p className="text-sm font-semibold">내 기기</p>
-            {(user.deviceType || user.deviceOsName) && user.deviceModel ? (
-              <p className="flex flex-wrap items-center gap-2 text-sm">
-                <Chip>{osText(user.deviceType, user.deviceOsName)}</Chip>
-                <span>{user.deviceModel.modelName}</span>
+            <div className="flex items-center justify-between gap-2">
+              <p className="flex items-center gap-0.5 text-sm font-semibold">
+                내 기기
+                <InfoTip label="내 기기">기기 변경을 원하면 마이페이지에서 변경이 가능합니다</InfoTip>
               </p>
-            ) : (
-              <p className="text-sm text-danger">내 기기가 등록되어 있지 않아요.</p>
-            )}
-            <p className="text-xs text-muted">
-              여기서는 바꿀 수 없어요. 바꾸려면{' '}
-              <Link href="/me" className="font-semibold text-brand underline-offset-4 hover:underline">
-                마이페이지
-              </Link>
-              로 이동해 주세요.
-            </p>
+            </div>
+            {myDevice(user)}
           </div>
 
           {mine ? (
-            <div className="space-y-2">
-              <Notice tone="success">이 모집에 참여 중이에요.</Notice>
-              {started ? (
-                <p className="text-xs text-muted">테스트가 시작되어 더는 취소할 수 없어요.</p>
-              ) : (
+            <div className="space-y-3">
+              {/* 모집 신청이 끝났다는 뜻의 읽기 전용 표시. 모집글 단계 배지와는 별개다. */}
+              <p role="status" className="flex items-center justify-center gap-2 rounded-control bg-praise-tint py-2.5 text-base font-bold text-praise">
+                <CheckCircle2 className="size-5" aria-hidden />
+                참여 완료
+              </p>
+              {/* 테스트가 시작되면 취소할 수 없어서 버튼을 보여 주지 않는다. */}
+              {!started && (
                 <Button variant="secondary" className="w-full" onClick={() => setConfirmOpen(true)}>
                   신청 취소하기
                 </Button>
@@ -133,16 +147,27 @@ export function ApplyPanel({ recruitment: r, user }: { recruitment: Recruitment;
               {!allowed && user.deviceModel && (
                 <Notice tone="error">내 기기는 이 모집의 허용 기기에 없어요. 위의 허용 기기 조건을 확인해 주세요.</Notice>
               )}
-              <Button className="w-full" onClick={apply} loading={busy} disabled={!allowed}>
+              <Button className="w-full" onClick={() => setApplyOpen(true)} loading={busy} disabled={!allowed}>
                 신청하기
               </Button>
-              <p className="text-xs text-muted">테스트 시작 전까지 취소하고 다시 신청할 수 있어요. 정원이 다 차면 테스트가 바로 시작돼요.</p>
             </div>
           ) : (
-            <p className="text-sm text-muted">{closedText(r)}</p>
+            <Button className="w-full" disabled>
+              신청 마감
+            </Button>
           )}
         </div>
       )}
+
+      <ConfirmDialog
+        open={applyOpen}
+        title="신청할까요?"
+        description="테스트 시작 전까지는 취소하고 다시 신청할 수 있어요. 정원이 다 차면 테스트가 바로 시작돼요."
+        confirmLabel="신청하기"
+        loading={busy}
+        onConfirm={apply}
+        onCancel={() => setApplyOpen(false)}
+      />
 
       <ConfirmDialog
         open={confirmOpen}

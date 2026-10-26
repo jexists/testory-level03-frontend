@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ChevronLeft } from 'lucide-react';
+import { BackLink } from '@/components/ui/back-link';
 import { Chip } from '@/components/ui/badge';
-import { EmptyState, Notice } from '@/components/ui/state-view';
+import { Notice } from '@/components/ui/state-view';
 import { ApplyPanel } from '@/features/applications/apply-panel';
 import { FeedbackForm } from '@/features/feedbacks/feedback-form';
 import { FeedbackItem } from '@/features/feedbacks/feedback-item';
+import { FactGrid } from '@/features/admin/fact-grid';
 import { ApiError } from '@/lib/api';
-import { dDay, formatDateTime } from '@/lib/format';
+import { formatDate, formatDateTime, formatPeriod } from '@/lib/format';
 import { getCurrentUser, serverApi } from '@/lib/server-api';
 import type { MyFeedback, Recruitment } from '@/lib/types';
 
@@ -42,27 +42,25 @@ export default async function RecruitmentDetailPage({ params }: { params: Params
 
   return (
     <div className="container-page py-8 sm:py-10">
-      <Link href="/" className="mb-5 inline-flex items-center gap-1 text-sm font-medium text-muted hover:text-ink">
-        <ChevronLeft className="size-4" aria-hidden />
+      <BackLink href="/" className="mb-5">
         모집글 목록
-      </Link>
+      </BackLink>
 
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
-        <div className="min-w-0 space-y-8">
-          <header className="space-y-3">
+        <div className="panel min-w-0 space-y-8 p-5 sm:p-7">
+          <header className="space-y-4">
             <h1 className="text-2xl">{r.title}</h1>
-            <p className="text-sm text-muted">
-              모집 마감(테스트 시작) {formatDateTime(r.startAt)} <span aria-hidden>·</span> 종료{' '}
-              {formatDateTime(r.endAt)} <span aria-hidden>·</span> 피드백 마감 {formatDateTime(r.feedbackDueAt)}
-            </p>
+            <FactGrid
+              className="grid-cols-1 sm:grid-cols-3"
+              items={[
+                { label: '모집 마감', value: formatDate(r.startAt) },
+                { label: '테스트 기간', value: formatPeriod(r.startAt, r.endAt) },
+                { label: '피드백 마감', value: formatDate(r.feedbackDueAt) },
+              ]}
+            />
           </header>
 
-          <section aria-labelledby="desc" className="space-y-2">
-            <h2 id="desc" className="text-lg">
-              테스트 소개
-            </h2>
-            <p className="max-w-prose whitespace-pre-wrap leading-relaxed text-ink-soft">{r.description}</p>
-          </section>
+          <p className="max-w-prose whitespace-pre-wrap leading-relaxed text-ink-soft">{r.description}</p>
 
           <section aria-labelledby="devices" className="space-y-3">
             <h2 id="devices" className="text-lg">
@@ -81,57 +79,45 @@ export default async function RecruitmentDetailPage({ params }: { params: Params
                 ))
               )}
             </ul>
-            <p className="text-sm text-muted">
-              {r.devices.length === 0 ? '기기와 관계없이 누구나 신청할 수 있어요.' : '내 기기가 이 조건에 맞아야 신청할 수 있어요.'}
-            </p>
           </section>
 
-          <section aria-labelledby="feedback" className="space-y-3">
-            <h2 id="feedback" className="text-lg">
-              피드백
-            </h2>
-            {!user ? (
-              <div className="panel">
-                <EmptyState title="로그인하고 신청하면 피드백을 남길 수 있어요" />
-              </div>
-            ) : user.role === 'ADMIN' ? (
-              <p className="text-sm text-muted">관리자는 피드백을 쓰지 않아요. 피드백은 관리자 메뉴에서 모아 볼 수 있어요.</p>
-            ) : participating ? (
-              <div className="space-y-5">
-                {/* 피드백은 테스트 중일 때만 쓸 수 있다. (서버도 같은 규칙으로 막는다) */}
-                {r.stage === 'TESTING' ? (
-                  <div className="panel space-y-4 p-5">
-                    <p className="text-sm text-muted">
-                      피드백 마감 <span className="font-semibold text-ink">{formatDateTime(r.feedbackDueAt)}</span> ({dDay(r.feedbackDueAt)})
-                    </p>
-                    <FeedbackForm recruitmentId={r.id} />
-                  </div>
-                ) : r.stage === 'FEEDBACK_CLOSED' ? (
-                  <Notice>피드백 마감일이 지났어요. 남겨 주신 피드백은 담당자가 정리하고 있어요.</Notice>
-                ) : (
-                  <Notice>테스트가 시작되면 피드백을 쓸 수 있어요. 정원이 다 차거나 {formatDateTime(r.startAt)}이 되면 시작해요.</Notice>
-                )}
-                <div className="space-y-2">
-                  <h3 className="text-base">내가 쓴 피드백</h3>
-                  <div className="panel overflow-hidden">
-                    {myFeedbacks.length > 0 ? (
-                      <ul className="divide-y divide-line">
-                        {myFeedbacks.map((f) => (
-                          <FeedbackItem key={f.id} f={f} />
-                        ))}
-                      </ul>
-                    ) : (
-                      <EmptyState title="아직 쓴 피드백이 없어요" description="써 보면서 느낀 점을 유형을 골라 남겨 주세요." />
-                    )}
-                  </div>
+          {/* 비로그인 방문자·관리자·신청하지 않은 사용자에게는 피드백 영역을 보여 주지 않는다. */}
+          {user && participating && (
+            <section aria-label="피드백" className="space-y-4">
+              {r.stage !== 'FEEDBACK_CLOSED' && (
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                  <h2 className="text-lg">피드백</h2>
+                  <p className="text-sm text-muted">마감 {formatDateTime(r.feedbackDueAt)}</p>
                 </div>
-              </div>
-            ) : (
-              <div className="panel">
-                <EmptyState title="참여 중인 모집글에만 피드백을 쓸 수 있어요" description="오른쪽에서 신청하면 이 테스트의 피드백을 남길 수 있어요." />
-              </div>
-            )}
-          </section>
+              )}
+              {r.stage === 'FEEDBACK_CLOSED' ? (
+                <Notice tone="neutral" className="text-center">
+                  피드백 마감
+                </Notice>
+              ) : (
+                <div className="space-y-6">
+                  {/* 피드백은 테스트 중일 때만 쓸 수 있다. (서버도 같은 규칙으로 막는다) */}
+                  {r.stage === 'TESTING' ? (
+                    <FeedbackForm recruitmentId={r.id} />
+                  ) : (
+                    <Notice>피드백은 테스트 시작 후 작성 가능 (정원 마감 또는 {formatDateTime(r.startAt)})</Notice>
+                  )}
+                  {myFeedbacks.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-base">내가 쓴 피드백</h3>
+                      <div className="overflow-hidden rounded-control border border-line">
+                        <ul className="divide-y divide-line">
+                          {myFeedbacks.map((f) => (
+                            <FeedbackItem key={f.id} f={f} />
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
         </div>
 
         <ApplyPanel recruitment={r} user={user} />

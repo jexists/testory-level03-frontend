@@ -46,17 +46,19 @@ test('테스터는 신청하고 취소하고 다시 신청한다', async ({ page
   await login(page, 'tester20@testory.demo');
   await page.goto('/');
   await page.getByRole('link', { name: '반복 일정 기능 테스트' }).click();
-  await expect(page.getByText('여기서는 바꿀 수 없어요')).toBeVisible(); // 내 기기는 읽기 전용
+  await expect(page.getByRole('button', { name: '내 기기 설명 보기' })).toBeVisible(); // 내 기기는 여기서 바꾸지 않고 안내만 한다
 
   await page.getByRole('button', { name: '신청하기' }).click();
-  await expect(page.getByText('이 모집에 참여 중이에요.')).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: '신청하기' }).click(); // 확인 모달을 거쳐야 신청된다
+  await expect(page.getByText('참여 완료')).toBeVisible();
 
   await page.getByRole('button', { name: '신청 취소하기' }).click();
   await page.getByRole('dialog').getByRole('button', { name: '신청 취소하기' }).click();
   await expect(page.getByRole('button', { name: '신청하기' })).toBeVisible();
 
   await page.getByRole('button', { name: '신청하기' }).click();
-  await expect(page.getByText('이 모집에 참여 중이에요.')).toBeVisible();
+  await page.getByRole('dialog').getByRole('button', { name: '신청하기' }).click();
+  await expect(page.getByText('참여 완료')).toBeVisible();
 
   await page.goto('/me/applications');
   // 다시 신청했으면 예전 취소 기록은 목록에 보이지 않는다
@@ -77,7 +79,7 @@ test('참여 중인 테스터는 테스트 중에 유형을 골라 피드백을 
   await page.goto('/?status=ALL');
   // 정원이 차서 바로 시작된 테스트 (시연 데이터)
   await page.getByRole('link', { name: '하루칸 앱 전체 베타 테스트' }).click();
-  await expect(page.getByText(/피드백 마감 .*D-/)).toBeVisible();
+  await expect(page.getByText(/^피드백 마감 \d+월/)).toBeVisible();
   await page.waitForLoadState('networkidle'); // 화면이 다 뜬 뒤에 입력한다
 
   await page.getByLabel('제목').fill('알림 소리 설정이 저장되지 않아요');
@@ -85,7 +87,7 @@ test('참여 중인 테스터는 테스트 중에 유형을 골라 피드백을 
   await page.getByRole('button', { name: '피드백 남기기' }).click();
   await expect(page.getByText('피드백 유형을 골라 주세요.')).toBeVisible(); // 유형을 안 고르면 저장되지 않는다
 
-  await page.locator('label', { hasText: '의도와 다르게 동작했어요' }).click();
+  await page.locator('label', { hasText: /^버그$/ }).click();
   await page.getByRole('button', { name: '피드백 남기기' }).click();
   await expect(page.getByRole('heading', { name: '알림 소리 설정이 저장되지 않아요' })).toBeVisible();
 });
@@ -100,7 +102,7 @@ test('피드백 마감이 지난 테스트에는 피드백을 쓸 수 없다', a
   await login(page, 'tester01@testory.demo');
   await page.goto('/?status=ALL');
   await page.getByRole('link', { name: '알림 기능 테스트' }).click();
-  await expect(page.getByText('피드백 마감일이 지났어요.')).toBeVisible();
+  await expect(page.getByRole('region', { name: '피드백' }).getByText('피드백 마감', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: '피드백 남기기' })).toHaveCount(0);
 });
 

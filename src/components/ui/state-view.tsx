@@ -48,14 +48,15 @@ export function ListSkeleton({ rows = 4 }: { rows?: number }) {
 }
 
 /** 화면 위쪽에 두는 짧은 안내/오류 줄 */
-export function Notice({ tone = 'info', children }: { tone?: 'info' | 'error' | 'success'; children: ReactNode }) {
+export function Notice({ tone = 'info', className, children }: { tone?: 'info' | 'error' | 'success' | 'neutral'; className?: string; children: ReactNode }) {
   const style = {
     info: 'border-brand/25 bg-brand-tint text-brand-ink',
     error: 'border-bug/30 bg-bug-tint text-bug',
     success: 'border-praise/30 bg-praise-tint text-praise',
+    neutral: 'border-line bg-sunken text-ink-soft',
   }[tone];
   return (
-    <p role={tone === 'error' ? 'alert' : 'status'} className={clsx('rounded-control border px-3.5 py-2.5 text-sm font-medium', style)}>
+    <p role={tone === 'error' ? 'alert' : 'status'} className={clsx('rounded-control border px-3.5 py-2.5 text-sm font-medium', style, className)}>
       {children}
     </p>
   );
