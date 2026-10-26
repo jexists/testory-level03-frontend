@@ -1,5 +1,4 @@
-import { ChevronLeft } from 'lucide-react';
-import Link from 'next/link';
+import { BackLink } from '@/components/ui/back-link';
 import { DeletedBadge, StageBadge } from '@/components/ui/badge';
 import { ClampedText } from '@/components/ui/clamped-text';
 import { ErrorState } from '@/components/ui/state-view';
@@ -17,10 +16,9 @@ export default async function RecruitmentDetailLayout(props: { params: Promise<{
   const id = toPositiveInt(raw);
 
   const back = (
-    <Link href="/admin" className="inline-flex items-center gap-0.5 text-sm text-brand-ink underline-offset-4 hover:underline">
-      <ChevronLeft className="size-4" aria-hidden />
+    <BackLink href="/admin">
       대시보드로
-    </Link>
+    </BackLink>
   );
 
   if (!id) {

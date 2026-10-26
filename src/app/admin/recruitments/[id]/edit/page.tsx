@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
-import { ChevronLeft } from 'lucide-react';
-import Link from 'next/link';
+import { BackLink } from '@/components/ui/back-link';
 import { LinkButton } from '@/components/ui/button';
 import { ErrorState } from '@/components/ui/state-view';
 import { LoadError } from '@/features/admin/load-error';
@@ -16,10 +15,9 @@ export default async function EditRecruitmentPage(props: { params: Promise<{ id:
   const { id: raw } = await props.params;
   const id = toPositiveInt(raw);
   const back = (
-    <Link href={id ? `/admin/recruitments/${id}` : '/admin'} className="inline-flex items-center gap-0.5 text-sm text-brand-ink underline-offset-4 hover:underline">
-      <ChevronLeft className="size-4" aria-hidden />
+    <BackLink href={id ? `/admin/recruitments/${id}` : '/admin'}>
       {id ? '모집글로 돌아가기' : '대시보드로'}
-    </Link>
+    </BackLink>
   );
 
   if (!id) {
