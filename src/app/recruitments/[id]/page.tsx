@@ -51,7 +51,7 @@ export default async function RecruitmentDetailPage({ params }: { params: Params
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_21rem] lg:items-start">
         <div className="min-w-0 space-y-8">
           <header className="space-y-3">
-            <h1 className="text-2xl sm:text-3xl">{r.title}</h1>
+            <h1 className="text-2xl">{r.title}</h1>
             <p className="text-sm text-muted">
               {KIND_LABEL[r.kind]} 테스트 <span aria-hidden>·</span> 모집 마감(테스트 시작) {formatDateTime(r.startAt)} <span aria-hidden>·</span> 종료{' '}
               {formatDateTime(r.endAt)} <span aria-hidden>·</span> 피드백 마감 {formatDateTime(r.feedbackDueAt)}

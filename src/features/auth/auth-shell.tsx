@@ -6,7 +6,7 @@ export function AuthShell({ title, children, footer }: { title: string; children
     <div className="container-page flex justify-center py-12 sm:py-20">
       <div className="w-full max-w-md">
         <div className="space-y-12">
-          <h1 className="text-center text-4xl font-bold tracking-tight">{title}</h1>
+          <h1 className="text-center text-2xl font-bold tracking-tight">{title}</h1>
           {children}
         </div>
         <p className="mt-6 text-center text-sm text-muted">{footer}</p>
