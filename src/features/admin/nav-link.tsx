@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 
 interface NavLinkProps {
   href: string;
-  /** true 이면 주소가 정확히 같을 때만 현재 메뉴로 본다 (현황 메뉴용) */
+  /** true 이면 주소가 정확히 같을 때만 현재 메뉴로 본다 (대시보드 메뉴용) */
   exact?: boolean;
   variant: 'side' | 'tab';
   children: React.ReactNode;

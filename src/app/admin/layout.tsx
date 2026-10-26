@@ -5,7 +5,7 @@ import { NavLink } from '@/features/admin/nav-link';
 import { getCurrentUser } from '@/lib/server-api';
 
 const items = [
-  { href: '/admin', label: '현황', exact: true },
+  { href: '/admin', label: '대시보드', exact: true },
   { href: '/admin/recruitments', label: '모집글 관리' },
   { href: '/admin/feedbacks', label: '피드백' },
   { href: '/admin/analysis', label: 'AI 분석' },

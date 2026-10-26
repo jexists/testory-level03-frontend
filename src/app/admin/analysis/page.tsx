@@ -6,6 +6,7 @@ import { AnalysisPicker } from '@/features/admin/analysis-picker';
 import { AnalyzeButton } from '@/features/admin/analyze-button';
 import { LoadError } from '@/features/admin/load-error';
 import { PageHeader } from '@/features/admin/page-header';
+import { ReviewButton } from '@/features/admin/review-button';
 import { first, toPositiveInt, type SearchParams } from '@/features/admin/query';
 import { ApiError } from '@/lib/api';
 import { formatDateTime } from '@/lib/format';
@@ -141,6 +142,14 @@ export default async function AdminAnalysisPage(props: { searchParams: Promise<S
   }
 
   const current = detail?.versionNo ?? versionNo ?? versions[0].versionNo;
+  const isLatest = current === versions[0].versionNo;
+  // 피드백 마감 뒤 최신 분석을 보면 "확인 완료"로 모집글을 종료할 수 있다.
+  const review =
+    isLatest && selected?.stage === 'ANALYZED' && !selected.deletedAt ? (
+      <ReviewButton recruitmentId={recruitmentId} />
+    ) : isLatest && selected?.stage === 'DONE' && selected.analysisReviewedAt ? (
+      <p className="flex items-center gap-1.5 text-sm font-semibold text-praise">확인 완료됨 · {formatDateTime(selected.analysisReviewedAt)}</p>
+    ) : null;
 
   return (
     <>
@@ -179,6 +188,7 @@ export default async function AdminAnalysisPage(props: { searchParams: Promise<S
                 <p className="text-sm text-ink-soft">{formatDateTime(detail.createdAt)} 분석</p>
                 <p className="text-sm text-ink-soft">분석 당시 피드백 {detail.feedbackCount}건</p>
                 {detail.createdByNickname && <p className="text-sm text-ink-soft">분석한 사람 {detail.createdByNickname}</p>}
+                {review && <div className="ml-auto">{review}</div>}
               </div>
               {SECTIONS.map((s) => (
                 <ResultSection key={s.key} title={s.title} dot={s.dot} ordered={s.ordered} items={detail.result[s.key] ?? []} />

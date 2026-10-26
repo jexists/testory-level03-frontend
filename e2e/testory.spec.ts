@@ -21,18 +21,16 @@ test.beforeAll(async ({ request }) => {
 
 test('방문자는 목록을 보고 기기·상태 필터와 검색을 쓸 수 있다', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: '테스터 모집' })).toBeVisible();
-  await expect(page.getByText('5개의 모집글')).toBeVisible();
+  await expect(page.getByRole('link', { name: '반복 일정 기능 테스트' })).toBeVisible();
 
   await page.getByRole('link', { name: '모집 중', exact: true }).click();
-  await expect(page.getByText('2개의 모집글')).toBeVisible();
   await expect(page.getByRole('link', { name: '반복 일정 기능 테스트' })).toBeVisible();
 
   await page.getByRole('link', { name: '마감', exact: true }).click();
   await expect(page.getByRole('link', { name: '하루칸 앱 전체 베타 테스트' })).toBeVisible();
 
   await page.goto('/?q=알림');
-  await expect(page.getByText('1개의 모집글')).toBeVisible();
+  await expect(page.getByRole('link', { name: '알림 기능 테스트' })).toBeVisible();
 });
 
 test('방문자가 상세에서 신청하려면 로그인이 필요하다', async ({ page }) => {
@@ -74,10 +72,12 @@ test('내 기기가 조건에 맞지 않으면 신청할 수 없다', async ({ p
   await expect(page.getByRole('button', { name: '신청하기' })).toBeDisabled();
 });
 
-test('참여 중인 테스터는 유형을 골라 피드백을 남긴다', async ({ page }) => {
+test('참여 중인 테스터는 테스트 중에 유형을 골라 피드백을 남긴다', async ({ page }) => {
   await login(page, 'tester01@testory.demo');
   await page.goto('/');
-  await page.getByRole('link', { name: '알림 기능 테스트' }).click();
+  // 정원이 차서 바로 시작된 테스트 (시연 데이터)
+  await page.getByRole('link', { name: '하루칸 앱 전체 베타 테스트' }).click();
+  await expect(page.getByText(/피드백 마감 .*D-/)).toBeVisible();
   await page.waitForLoadState('networkidle'); // 화면이 다 뜬 뒤에 입력한다
 
   await page.getByLabel('제목').fill('알림 소리 설정이 저장되지 않아요');
@@ -96,10 +96,28 @@ test('일반 사용자는 관리자 화면에 들어갈 수 없다', async ({ pa
   await expect(page.getByText('관리자만 볼 수 있는 화면이에요')).toBeVisible();
 });
 
-test('관리자는 현황과 AI 분석 이전 버전을 본다', async ({ page }) => {
+test('피드백 마감이 지난 테스트에는 피드백을 쓸 수 없다', async ({ page }) => {
+  await login(page, 'tester01@testory.demo');
+  await page.goto('/');
+  await page.getByRole('link', { name: '알림 기능 테스트' }).click();
+  await expect(page.getByText('피드백 마감일이 지났어요.')).toBeVisible();
+  await expect(page.getByRole('button', { name: '피드백 남기기' })).toHaveCount(0);
+});
+
+test('관리자는 대시보드에서 단계별로 보고, 분석을 확인 완료하면 종료가 된다', async ({ page }) => {
   await login(page, 'admin@testory.demo');
   await expect(page).toHaveURL(/\/admin$/);
-  await expect(page.getByText('버그 피드백')).toBeVisible();
+  await expect(page.getByRole('heading', { name: '대시보드', level: 1 })).toBeVisible();
+  await expect(page.getByText('정원 차서 바로 시작')).toBeVisible();
+
+  await page.getByRole('link', { name: /^분석 완료/ }).click();
+  await expect(page.getByRole('link', { name: '알림 기능 테스트' })).toBeVisible();
+  await page.getByRole('link', { name: '분석 확인하기' }).click();
+  await page.getByRole('button', { name: '확인 완료' }).click();
+  await expect(page.getByText(/확인 완료됨/)).toBeVisible();
+
+  await page.goto('/admin?stage=DONE');
+  await expect(page.getByRole('link', { name: '알림 기능 테스트' })).toBeVisible();
 
   await page.goto('/admin/analysis');
   await page.getByLabel('모집글').click();
