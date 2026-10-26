@@ -2,7 +2,7 @@
 
 앱 베타테스터를 모집하고, 신청과 피드백을 한곳에서 관리하는 서비스 **Testory** 의 웹 화면입니다. 화면은 사용자 경험만 담당하고, 정원·기기 조건·취소 같은 **규칙의 최종 판단은 모두 백엔드(NestJS)** 가 합니다.
 
-- 기획서: [`기획서.md`](./기획서.md) (원본은 `docs/03_기획서.md` 와 동일)
+- 기획서: [`기획서.md`](./기획서.md) (백엔드 저장소의 `기획서.md` 와 같은 내용)
 - 백엔드 저장소: `testory-level01-backend` (이 저장소와 독립)
 - 로컬 주소: <http://localhost:3000> (백엔드 <http://localhost:4000>, API 문서 <http://localhost:4000/api/docs>)
 - 배포 주소: _(Vercel 배포 후 여기에 입력)_
@@ -16,15 +16,32 @@
 | 관리자 | `admin@testory.demo` | `testory-demo-1234` |
 | 일반 사용자(Android, 갤럭시 A54) | `tester20@testory.demo` | `testory-demo-1234` |
 | 일반 사용자(iOS, 아이폰 14 — 기기 불일치 시연) | `tester19@testory.demo` | `testory-demo-1234` |
-| 일반 사용자(알림 기능 테스트 참여 중, 피드백 시연) | `tester01@testory.demo` | `testory-demo-1234` |
+| 일반 사용자("하루칸 앱 전체 베타 테스트" 테스트 중 → 피드백 시연, "반복 일정 기능 테스트" 모집 중 → 취소 시연) | `tester01@testory.demo` | `testory-demo-1234` |
 
 운영 환경에서는 백엔드의 `DEMO_PASSWORD` 로 정한 비밀번호가 쓰입니다.
 
+로컬 개발(`npm run dev`)에서는 로그인 화면에 **관리자로 로그인 / 테스터로 로그인**(tester01) 빠른 로그인 버튼이 보입니다. 운영 빌드에는 들어가지 않습니다.
+
 ## 주요 기능
 
-- **방문자**: 모집글 목록(기기 종류·모집 상태 필터, 제목 검색, 남은 자리)과 상세
-- **테스터**: 회원가입(브라우저로 OS 자동 선택 + 모델 목록 선택), 신청·취소·재신청, 내 신청(신청 당시 기기), 피드백 작성(유형 직접 선택), 내 피드백, 마이페이지에서 내 기기 수정
-- **관리자**: 현황 숫자 3개, 모집글 등록·수정·삭제(Soft Delete)·마감, 신청자 조회(피드백 많은 순), 피드백 관리, **AI 분석(버전별 저장·이전 버전 조회)**, 시연 데이터 초기화
+- **방문자**: 모집글 목록(기기 종류·모집 상태 필터 — 기본은 모집 중, 제목 검색, 남은 자리)과 상세(진행 단계, 모집 마감일·테스트 기간·피드백 마감일)
+- **테스터**: 회원가입(브라우저로 OS 자동 선택 + 모델 목록 선택, 없으면 "기타"로 직접 입력), 신청·취소·재신청, 내 신청(상태 필터, 신청 당시 기기, 모집글별 내 피드백 수), 피드백 작성(유형 직접 선택, 테스트 중일 때만), 마이페이지에서 내 기기 수정(저장 전 확인 창)
+- **관리자**: 대시보드(숫자 카드 모집 중·마감 임박·AI 분석 필요, 진행 단계 필터, 검색), 모집글 등록·수정(피드백 마감일, 모든 기기 / 선택한 기기만)·삭제(Soft Delete)·**복구**·마감/마감 해제, 모집글 상세 탭(신청자 · 피드백 · **AI 분석** — 버전별 저장·이전 버전 조회·확인 완료), 사용자 메뉴의 시연 데이터 초기화. 관리자는 신청·피드백을 하지 않습니다.
+
+### 화면 주소
+
+| 주소 | 화면 |
+|---|---|
+| `/` | 모집글 목록 |
+| `/recruitments/:id` | 모집글 상세 + 신청 + 피드백 |
+| `/login`, `/signup` | 로그인, 회원가입 |
+| `/me` | 마이페이지 (계정 정보, 내 기기 수정) |
+| `/me/applications` | 내 신청 (테스터만, 사용자 메뉴에서 이동) |
+| `/admin` | 관리자 대시보드 (`filter`, `q`, `page`) |
+| `/admin/recruitments/new`, `/admin/recruitments/:id/edit` | 모집글 등록, 수정 |
+| `/admin/recruitments/:id/applicants` · `/feedbacks` · `/analysis` | 모집글 상세의 신청자 · 피드백 · AI 분석 탭 |
+
+예전 주소 `/me/feedbacks`, `/admin/recruitments`, `/admin/feedbacks`, `/admin/analysis`, `/admin/demo` 는 위의 새 화면으로 이동시킵니다.
 
 ## 기술 스택
 
@@ -40,8 +57,8 @@ src/
     page.tsx              # 모집글 목록 (서버 렌더링, 필터는 주소의 쿼리)
     recruitments/[id]/    # 상세 + 신청 + 피드백
     (auth)/login, signup  # 로그인·회원가입
-    me/                   # 내 신청, 내 피드백, 마이페이지 (로그인 필요)
-    admin/                # 관리자 화면 (관리자만)
+    me/                   # 마이페이지, 내 신청 (로그인 필요, 내 피드백은 내 신청으로 합침)
+    admin/                # 대시보드, 모집글 등록·수정, 모집글 상세 탭 (관리자만)
     loading.tsx, error.tsx, not-found.tsx
   features/               # 기능별 화면 조각: auth, recruitments, applications, feedbacks, profile, admin
   components/ui/          # 버튼·입력·배지·자리 칸(SeatStrip)·토스트·대화상자 등 공통 UI
@@ -70,8 +87,9 @@ e2e/                      # Playwright 시나리오
 | 이름 | 필수 | 설명 / 형식 | 로컬 · 운영 | 민감 |
 |---|---|---|---|---|
 | `BACKEND_URL` | 예 | 백엔드(NestJS) 주소. 서버에서만 쓰이고 브라우저에 노출되지 않음. 마지막 `/` 없이 | 로컬 `http://localhost:4000`, 운영 Render 서비스 주소 | 아니오 |
+| `NEXT_PUBLIC_DEMO_PASSWORD` | 아니오 | 로컬 개발 전용 빠른 로그인 버튼이 쓰는 시연 계정 비밀번호. 백엔드 `DEMO_PASSWORD` 를 바꿨을 때만 적음 | 로컬만 (운영 빌드에서는 쓰지 않음) | 아니오 (시연용 가짜 계정) |
 
-브라우저는 같은 오리진의 `/api/*` 만 호출하고, `next.config.ts` 의 rewrite 가 이를 `BACKEND_URL` 로 전달합니다. 그래서 로그인 쿠키(httpOnly, SameSite=Lax)가 항상 이 사이트의 1st-party 쿠키가 되어 브라우저의 타사 쿠키 차단에 걸리지 않고, CORS 설정도 필요 없습니다. `NEXT_PUBLIC_*` 변수와 비밀 키는 없습니다.
+브라우저는 같은 오리진의 `/api/*` 만 호출하고, `next.config.ts` 의 rewrite 가 이를 `BACKEND_URL` 로 전달합니다. 그래서 로그인 쿠키(httpOnly, SameSite=Lax)가 항상 이 사이트의 1st-party 쿠키가 되어 브라우저의 타사 쿠키 차단에 걸리지 않고, CORS 설정도 필요 없습니다. 비밀 키는 없고, `NEXT_PUBLIC_*` 변수는 위의 로컬 개발용 하나뿐입니다.
 
 ## 로컬 실행
 
