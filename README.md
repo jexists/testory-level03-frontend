@@ -7,6 +7,7 @@
 <a href="https://testory-level01-frontend.vercel.app"><img src="https://img.shields.io/badge/배포_앱_열기-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="배포 앱 열기"></a>
 <a href="https://testory-level01-backend.onrender.com/api/docs"><img src="https://img.shields.io/badge/API_문서-85EA2D?style=for-the-badge&logo=swagger&logoColor=black" alt="API 문서"></a>
 <a href="./기획서.md"><img src="https://img.shields.io/badge/기획서-2F5BEA?style=for-the-badge&logo=markdown&logoColor=white" alt="기획서"></a>
+<a href="./docs/보고서_Level01_정주애.pdf"><img src="https://img.shields.io/badge/보고서-E5484D?style=for-the-badge&logo=googledocs&logoColor=white" alt="보고서"></a>
 
 ![Next.js](https://img.shields.io/badge/Next.js_16-000000?style=flat-square&logo=nextdotjs&logoColor=white)
 ![React](https://img.shields.io/badge/React_19-61DAFB?style=flat-square&logo=react&logoColor=black)
@@ -78,14 +79,10 @@
 
 ## 📸 화면 캡처
 
-배포 주소 기준 주요 화면 캡처 15장 · 과제 보고서 PDF → [`docs/`](./docs) 폴더
-
-| 모집글 목록 | 관리자 대시보드 | AI 분석 |
-|---|---|---|
-| <img src="./docs/01_목록.png" alt="모집글 목록" width="260"> | <img src="./docs/08_관리자_대시보드_현황.png" alt="관리자 대시보드" width="260"> | <img src="./docs/11_AI분석.png" alt="AI 분석" width="260"> |
+배포 주소 기준 주요 화면 15장 → [`docs/`](./docs) 폴더
 
 <details>
-<summary><b>전체 캡처 목록</b></summary>
+<summary><b>화면 목록</b></summary>
 
 | 번호 | 화면 | 번호 | 화면 |
 |---|---|---|---|
@@ -96,7 +93,7 @@
 | 05 | [로그인](./docs/05_로그인.png) | 13 | [피드백 작성](./docs/13_피드백_작성.png) |
 | 06 | [신청 거절 (기기 불일치)](./docs/06_신청거절_기기불일치.png) | 14 | [관리자 피드백](./docs/14_관리자_피드백.png) |
 | 07 | [내 신청](./docs/07_내신청.png) | 15 | [마이페이지](./docs/15_마이페이지.png) |
-| 08 | [관리자 대시보드 · 현황](./docs/08_관리자_대시보드_현황.png) | 📄 | [과제 보고서 PDF](./docs/보고서_Level01_정주애.pdf) |
+| 08 | [관리자 대시보드 · 현황](./docs/08_관리자_대시보드_현황.png) | | |
 
 </details>
 
