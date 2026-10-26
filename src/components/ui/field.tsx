@@ -61,10 +61,28 @@ export function Field({ id, label, hint, info, error, children, className }: Fie
 export const describedBy = (id: string, error?: string, hint?: ReactNode) => (error ? `${id}-error` : hint ? `${id}-hint` : undefined);
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { inputSize?: ControlSize }>(function Input(
-  { className, inputSize = 'md', ...rest },
+  { className, inputSize = 'md', onClick, ...rest },
   ref,
 ) {
-  return <input ref={ref} className={clsx(controlClass, controlSize[inputSize], className)} {...rest} />;
+  // 날짜·시간 입력은 아이콘만이 아니라 칸 어디를 눌러도 달력이 열리게 한다.
+  const opensPicker = rest.type === 'date' || rest.type === 'datetime-local' || rest.type === 'time';
+  return (
+    <input
+      ref={ref}
+      className={clsx(controlClass, controlSize[inputSize], opensPicker && 'cursor-pointer', className)}
+      onClick={(e) => {
+        onClick?.(e);
+        if (opensPicker && !e.defaultPrevented) {
+          try {
+            e.currentTarget.showPicker();
+          } catch {
+            // 이미 열려 있거나 지원하지 않는 브라우저는 기본 동작에 맡긴다.
+          }
+        }
+      }}
+      {...rest}
+    />
+  );
 });
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement>>(function Textarea({ className, ...rest }, ref) {
