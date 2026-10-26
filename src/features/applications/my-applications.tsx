@@ -83,7 +83,7 @@ export function MyApplications({ items, feedbackCounts = {} }: { items: MyApplic
               title={a.recruitment.title}
               badge={
                 a.status === 'APPLIED' ? (
-                  <StageBadge stage={a.recruitment.stage} dot={false} />
+                  <StageBadge stage={a.recruitment.stage} />
                 ) : (
                   <span className="inline-flex rounded-chip bg-sunken px-2 py-0.5 text-xs font-semibold leading-5 text-muted">취소함</span>
                 )

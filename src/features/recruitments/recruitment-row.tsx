@@ -12,7 +12,7 @@ export function RecruitmentRow({ r }: { r: Recruitment }) {
       stretched
       href={`/recruitments/${r.id}`}
       title={r.title}
-      badge={<StageBadge stage={r.stage} dot={false} />}
+      badge={<StageBadge stage={r.stage} />}
       titleAside={
         // 좁은 화면에서는 줄이 바뀌며 점만 남으므로 기기를 아래 줄로 내린다
         <span className="hidden text-sm text-muted sm:inline">
