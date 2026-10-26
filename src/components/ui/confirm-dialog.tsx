@@ -40,7 +40,7 @@ export function ConfirmDialog({ open, title, description, confirmLabel, cancelLa
         <h2 id="confirm-title" className="text-lg">
           {title}
         </h2>
-        {description && <div className="text-sm text-ink-soft">{description}</div>}
+        {description && <div className="text-[15px] text-ink-soft">{description}</div>}
       </div>
       <div className="flex justify-end gap-2 border-t border-line bg-canvas px-6 py-3.5">
         <Button variant="secondary" onClick={onCancel} disabled={loading}>
